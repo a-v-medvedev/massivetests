@@ -1,0 +1,3 @@
+[submodule "thirdparty/dbscripts"]
+	path = thirdparty/dbscripts
+	url = https://gitlab.com/xamg/dbscripts.git
