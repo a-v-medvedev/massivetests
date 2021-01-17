@@ -52,6 +52,17 @@ function set_specific_params() {
             echo export IMB_ASYNC_AVG_OPT="AVERAGE" >> ./local_impi_env.sh
             export MASSIVETEST_AUX_ARGS="-spinperiod 10" 
             ;;
+        prog20)
+            echo export IMB_ASYNC_AVG_OPT="AVERAGE" >> ./local_impi_env.sh
+            export MASSIVETEST_AUX_ARGS="-spinperiod 20" 
+            ;;
+        prog50)
+            echo export IMB_ASYNC_AVG_OPT="AVERAGE" >> ./local_impi_env.sh
+            export MASSIVETEST_AUX_ARGS="-spinperiod 50" 
+        prog100)
+            echo export IMB_ASYNC_AVG_OPT="AVERAGE" >> ./local_impi_env.sh
+            export MASSIVETEST_AUX_ARGS="-spinperiod 100" 
+            ;;
         *) fatal "Unknown submode: $SUBMODE"
             ;;
     esac
