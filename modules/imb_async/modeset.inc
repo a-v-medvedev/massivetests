@@ -59,6 +59,7 @@ function set_specific_params() {
         prog50)
             echo export IMB_ASYNC_AVG_OPT="AVERAGE" >> ./local_impi_env.sh
             export MASSIVETEST_AUX_ARGS="-spinperiod 50" 
+            ;;
         prog100)
             echo export IMB_ASYNC_AVG_OPT="AVERAGE" >> ./local_impi_env.sh
             export MASSIVETEST_AUX_ARGS="-spinperiod 100" 
