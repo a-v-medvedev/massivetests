@@ -46,9 +46,9 @@ PARAM_COMPETING="over_full"
 
 
 # Modes and submodes:
-MODES="none calc calc_progress"
-SUBMODES="avg"
-#SUBMODES="prog1 prog2 prog5 prog10 prog20"
+MODES="calc_progress"
+#SUBMODES="avg"
+SUBMODES="prog1 prog2 prog4 prog6 prog10"
 #MODES="calc_mpich_prog_pinned"
 #SUBMODES="avg max med"
 
