@@ -41,7 +41,7 @@ function dnb_yaml-cpp() {
     OPTS="$OPTS -DYAML_CPP_BUILD_TOOLS=OFF"
     OPTS="$OPTS -DYAML_CPP_BUILD_CONTRIB=OFF"
     bi_cmake "$pkg" "$V" ".." "$OPTS" "$m"
-    i_make_binary_symlink "$pkg" "${V}"
+    i_make_binary_symlink "$pkg" "${V}" "$m"
     return 0
 }
 
@@ -62,7 +62,7 @@ function dnb_argsparser() {
     i_direct_copy "$pkg" "$V" "$FILES" "$m"
     FILES="extensions"
     i_direct_copy "$pkg" "$V" "$FILES" "$m"
-    i_make_binary_symlink "$pkg" "${V}"
+    i_make_binary_symlink "$pkg" "${V}" "$m"
     return 0
 }
 
@@ -78,7 +78,7 @@ function dnb_psubmit() {
         FILES=$(ls -1 *.sh)
         cd $INSTALL_DIR
         i_direct_copy "$pkg" "$V" "$FILES" "$m"
-        i_make_binary_symlink "$pkg" "${V}"
+        i_make_binary_symlink "$pkg" "${V}" "$m"
     fi
     return 0
 }
@@ -109,7 +109,7 @@ function dnb_mpi-benchmarks() {
     fi
 	FILES="src_cpp/IMB-ASYNC"
 	i_direct_copy "$pkg" "$V" "$FILES" "$m"
-	i_make_binary_symlink "$pkg" "${V}"
+	i_make_binary_symlink "$pkg" "${V}" "$m"
 	if this_mode_is_set "i" "$m"; then
 		cd "$pkg".bin
 		cat > psubmit.opt.TEMPLATE << 'EOM'
