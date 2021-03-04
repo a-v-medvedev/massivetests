@@ -38,10 +38,11 @@ struct result : public result_t {
     using parallel_conf_t = typename TRAITS::parallel_conf_t;
     using target_parameter_t = typename TRAITS::target_parameter_t;
     using workload_size_t = typename TRAITS::workload_size_t;
+    using value_t = typename TRAITS::value_t;
     parallel_conf_t parallel_conf;
     target_parameter_t target_parameter;
     workload_size_t workload_size;
-    double value;
+    value_t value;
     std::string index;
     result() {}
     result(parallel_conf_t _parallel_conf, target_parameter_t _target_parameter,

@@ -28,13 +28,13 @@
 
 class result_t;
 
-namespace imb_async {
+namespace teststub {
 
 struct traits {
     using parallel_conf_t = std::pair<int, int>;
     using target_parameter_t = std::pair<std::string, std::string>;
-    using workload_size_t = std::pair<size_t, int>;
-    using value_t = double;
+    using workload_size_t = std::string;
+    using value_t = int;
     std::vector<target_parameter_t> parse_and_make_target_parameters(const args_parser &parser,
                                                                      const std::string &name);
     std::vector<parallel_conf_t> parse_and_make_parallel_confs(const args_parser &parser,
@@ -49,18 +49,18 @@ struct traits {
     std::shared_ptr<output_maker_base> make_output_maker(test_scope<traits> &scope,
                                                          const std::string &outfile);
     std::shared_ptr<result_t> make_result(const parallel_conf_t &pc, const target_parameter_t &tp,
-                                          const workload_size_t &ws, value_t value);
+                                          const workload_size_t &ws, value_t status);
 };
 
-} // namespace imb_async
+} // namespace teststub
 
-std::ostream &operator<<(std::ostream &out, const typename imb_async::traits::parallel_conf_t conf);
+std::ostream &operator<<(std::ostream &out, const typename teststub::traits::parallel_conf_t conf);
 std::ostream &operator<<(std::ostream &out,
-                         const typename imb_async::traits::target_parameter_t par);
-std::ostream &operator<<(std::ostream &out, const typename imb_async::traits::workload_size_t work);
+                         const typename teststub::traits::target_parameter_t par);
+std::ostream &operator<<(std::ostream &out, const typename teststub::traits::workload_size_t work);
 YAML::Emitter &operator<<(YAML::Emitter &out,
-                          const typename imb_async::traits::parallel_conf_t conf);
+                          const typename teststub::traits::parallel_conf_t conf);
 YAML::Emitter &operator<<(YAML::Emitter &out,
-                          const typename imb_async::traits::target_parameter_t par);
+                          const typename teststub::traits::target_parameter_t par);
 YAML::Emitter &operator<<(YAML::Emitter &out,
-                          const typename imb_async::traits::workload_size_t work);
+                          const typename teststub::traits::workload_size_t work);
