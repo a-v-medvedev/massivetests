@@ -127,7 +127,7 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
             break;
         }
         std::string infile =
-            "results." + std::to_string(j) + "/output." + std::to_string(j) + ".yaml";
+            "results." + std::to_string(j) + "/result." + std::to_string(j) + ".yaml";
         auto st = check_if_failed("results." + std::to_string(j));
         if (st) {
             status = st;
