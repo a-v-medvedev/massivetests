@@ -34,6 +34,7 @@ struct process {
     int n, ppn;
     pid_t pid = 0;
     int jobid = 0;
+	int retval = 0;
     std::string state = "NONE";
     int pipe_fd[2];
     FILE *outfp = nullptr;
@@ -126,6 +127,11 @@ struct process {
             return;
         int status;
         waitpid(pid, &status, 0);
+        if (!(WIFEXITED(status))) {
+            retval = 1;
+        } else {
+            retval = WEXITSTATUS(status);
+        }
         state = "FINISHED";
         pid = 0;
     }
@@ -137,9 +143,11 @@ struct process {
         int res = waitpid(pid, &status, WNOHANG);
         if (res == 0)
             return false;
-        // if ((!WIFEXITED(status)) || (WEXITSTATUS(status) != 0))
-        //    state = "E";
-        // else
+        if (!(WIFEXITED(status))) {
+            retval = 1;  
+        } else {
+            retval = WEXITSTATUS(status);
+        }
         state = "FINISHED";
         pid = 0;
         return true;

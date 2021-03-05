@@ -30,15 +30,28 @@
 #include "inout_base.h"
 #include "process.h"
 #include "scope.h"
+
+#include "module.h"
+/*
+#if MODULE == imb_async
 #include "modules/imb_async/traits.h"
 #include "modules/imb_async/inout.h"
+#endif
+#if MODULE == teststub
+#include "modules/teststub/traits.h"
+#include "modules/teststub/inout.h"
+#endif
+*/
+// FIXME hide it somewhere
+template <>
+int test_scope<MODULE::traits>::counter = 0;
+
+#define TOSTR(X) (#X)
+
 #include "dispatcher.h"
 #include "helpers.h"
 #include "results.h"
 
-// FIXME hide it somewhere
-template <>
-int test_scope<imb_async::traits>::counter = 0;
 
 template <typename TRAITS>
 void start(const std::vector<std::shared_ptr<test_scope<TRAITS>>> &scopes,
@@ -80,14 +93,14 @@ int main(int argc, char **argv) {
     parser.add_map("sizes", "", ',', ':');
     parser.add<int>("nqueued", 5);
     parser.add<int>("repeats", 10);
-    parser.add<std::string>("driver", "imb_async");
+    parser.add<std::string>("driver", TOSTR(MODULE));
     if (!parser.parse())
         return 1;
     int nqueued = parser.get<int>("nqueued");
     int repeats = parser.get<int>("repeats");
-    auto driver = parser.get<std::string>("driver");
-    if (driver == "imb_async") {
-        parse_and_start<imb_async::traits>(parser, nqueued, repeats);
+    auto driver = parser.get<std::string>("driver");    
+    if (driver == TOSTR(MODULE)) {
+        parse_and_start<MODULE::traits>(parser, nqueued, repeats);
     } else {
         std::cout << "Unknown driver: " << driver << std::endl;
         return 1;

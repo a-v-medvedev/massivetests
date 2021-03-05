@@ -32,16 +32,27 @@
 #include "helpers.h"
 #include "results.h"
 
+#ifndef NATTEMPTS
+#define NATTEMPTS 1   // was: 100 for Lom2
+#endif
+
+#ifndef SLEEPTIME
+#define SLEEPTIME 1   // was: 100 for Lom2
+#endif
+
+
+
 namespace teststub {
 
 input_maker::input_maker(test_scope<teststub::traits> &_scope)
     : was_written(false), scope(_scope) {
     assert(scope.workload_sizes.size() == 1);
     const auto workload = scope.workload_sizes[0];
-	testitem.load(workload);
+	testitem.load(workload.as_string());
 }
 
 void input_maker::write_out(const std::string &input_file_name) {
+    (void)input_file_name;
     if (was_written)
         return;
 /*    
@@ -64,7 +75,7 @@ void input_maker::write_out(const std::string &input_file_name) {
 void input_maker::make(std::string &input_yaml, std::string &psubmit_options, std::string &args) {
 	assert(scope.workload_sizes.size() == 1);
 	const auto workload = scope.workload_sizes[0];
-    input_yaml = "./input_" + workload + ".yaml";
+    input_yaml = "./input_" + workload.workload + ".yaml";
     psubmit_options = "./psubmit.opt";
     args = "-load " + input_yaml + " -output " + " result.%PSUBMIT_JOBID%.yaml";
     char *aux_opts;
@@ -80,7 +91,7 @@ output_maker::output_maker(test_scope<teststub::traits> &_scope, const std::stri
     out << YAML::Flow;
     assert(scope.workload_sizes.size() == 1);
     const auto workload = scope.workload_sizes[0];
-	testitem.load(workload);
+	testitem.load(workload.as_string());
 }
 
 output_maker::~output_maker() {
@@ -91,10 +102,12 @@ output_maker::~output_maker() {
 }
 
 int check_if_failed(const std::string &s) {
+    (void)s;
     return 0;
 }
 
 void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
+    teststub::traits traits;
     int n = -1, ppn = -1;
 	const auto workload = scope.workload_sizes[0];
     using val_t = double;
@@ -109,6 +122,10 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
             ppn = proc->ppn;
         assert(n == proc->n);
         assert(ppn == proc->ppn);
+        if (proc->retval) {
+            status = 2;
+            break;
+        }
         std::string infile =
             "results." + std::to_string(j) + "/output." + std::to_string(j) + ".yaml";
         auto st = check_if_failed("results." + std::to_string(j));
@@ -117,7 +134,7 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
             break;
         }
         std::ifstream in;
-        if (!helpers::try_to_open_file<100, 100>(in, infile)) {
+        if (!helpers::try_to_open_file<NATTEMPTS, SLEEPTIME>(in, infile)) {
             // NOTE: commented out this return: let us handle missing input files as a non-fatal case
             // std::cout << "OUTPUT: teststub: stop processing: can't open input file: " << infile
             // << std::endl; return;
@@ -132,7 +149,7 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
         for (auto &sp : scope.target_parameters) {
             std::string &section = sp.first;
             std::string &parameter = sp.second;
-            auto str_sp = helpers::conf_to_string(sp);
+            auto str_sp = traits.target_parameter_to_string(sp);
             auto &vals = values[str_sp];
             if (!stream[section])
                 continue;
@@ -147,41 +164,43 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
     // assert(values.size() == attempts.size());
     attempts.resize(0);
     int nresults = 0;
-    for (auto &it : values) {
-        auto sp = helpers::str_split(it.first, '+');
-        assert(sp.size() == 2);
-        auto section = sp[0];
-        auto parameter = sp[1];
-        auto &vals = it.second;
+    if (!status) {
+        for (auto &it : values) {
+            auto sp = helpers::str_split(it.first, '+');
+            assert(sp.size() == 2);
+            auto section = sp[0];
+            auto parameter = sp[1];
+            auto &vals = it.second;
 #ifdef DEBUG
-        std::cout << ">> teststub: output: section=" << section << " parameter=" << parameter
-                  << std::endl;
+            std::cout << ">> teststub: output: section=" << section << " parameter=" << parameter
+                      << std::endl;
 #endif
-		auto &v = vals[workload];
-		if (v.size() == 0) {
+            auto &v = vals[workload];
+            if (v.size() == 0) {
 #ifdef DEBUG
-			std::cout << ">> teststub: output: nothing found for msglen=" << msglen
-					  << std::endl;
+                std::cout << ">> teststub: output: nothing found for section/parameter: " << it.first
+                          << std::endl;
 #endif
-			continue;
-		}
-		val_t result_val = 0.0;
-		if (v.size() == 1) {
-			result_val = v[0];
-		} else {
-			sort(v.begin(), v.end());
-			if (v.front() != v.back()) {
                 status = 1;
-			    break;
+                break;
             }
-            result_val = v[0];
-        }
-        if (result_val != testitem.base[section + "/" + parameter]) {
-            status = 1;
-            break;
+            val_t result_val = 0.0;
+            if (v.size() == 1) {
+                result_val = v[0];
+            } else {
+                sort(v.begin(), v.end());
+                if (v.front() != v.back()) {
+                    status = 1;
+                    break;
+                }
+                result_val = v[0];
+            }
+            if (result_val != testitem.base[section + "/" + parameter]) {
+                status = 1;
+                break;
+            }
         }
     }
-    teststub::traits traits;
     auto r = traits.make_result({n, ppn}, {"-", "-"}, workload, status);
     r->to_yaml(out);
     nresults++;

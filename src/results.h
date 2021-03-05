@@ -54,18 +54,18 @@ struct result : public result_t {
 
     void make_index() {
         std::stringstream ss;
-        ss << parallel_conf << "_";
-        ss << target_parameter << "_";
-        ss << workload_size;
+        ss << TRAITS::parallel_conf_to_string(parallel_conf) << "_";
+        ss << TRAITS::target_parameter_to_string(target_parameter) << "_";
+        ss << TRAITS::workload_size_to_string(workload_size);
         index = ss.str();
     }
 
     virtual void to_yaml(YAML::Emitter &out) {
         out << YAML::Flow;
         out << YAML::BeginMap;
-        out << parallel_conf;
-        out << target_parameter;
-        out << workload_size;
+        TRAITS::parallel_conf_to_yaml(parallel_conf, out);
+        TRAITS::target_parameter_to_yaml(target_parameter, out);
+        TRAITS::workload_size_to_yaml(workload_size, out);
         YAML_OUT("Value", value);
         out << YAML::EndMap;
     }

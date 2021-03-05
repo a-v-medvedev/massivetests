@@ -20,6 +20,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <fstream>
 
 #include "modules/teststub/traits.h"
 #include "scope.h"

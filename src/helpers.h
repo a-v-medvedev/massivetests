@@ -134,7 +134,7 @@ std::string conf_to_string(const T &conf) {
 template <class CONTAINER, typename ELEM_TYPE, class FUNC>
 static inline void yaml_out_seq(YAML::Emitter &out, const std::string &key, const CONTAINER &vals,
                                 FUNC getval, int nesting = 1) {
-    out << YAML::Key << key << YAML::Value << YAML::Flow;
+    out << YAML::Key << key.c_str() << YAML::Value << YAML::Flow;
     for (int i = 0; i < nesting; i++) {
         out << (i ? YAML::Newline : YAML::Flow) << YAML::BeginSeq;
     }

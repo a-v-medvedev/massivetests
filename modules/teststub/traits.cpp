@@ -26,6 +26,7 @@
 #include <assert.h>
 #include <cmath>
 
+#include <yaml-cpp/yaml.h>
 #include "argsparser.h"
 #include "helpers.h"
 #include "scope.h"
@@ -47,7 +48,12 @@ traits::parse_and_make_parallel_confs(const args_parser &parser, const std::stri
 
 std::vector<traits::workload_size_t>
 traits::parse_and_make_workload_sizes(const args_parser &parser, const std::string &name) {
-    return helpers::parsers_map_to_vector<size_t, int>(parser, name);
+    auto vpairs = helpers::parsers_map_to_vector<std::string, std::string>(parser, name);
+    std::vector<traits::workload_size_t> vwlds;
+    for (auto &p : vpairs) {
+        vwlds.push_back({p.first, p.second});
+    }
+    return vwlds;
 }
 
 std::shared_ptr<test_scope<traits>>
@@ -55,7 +61,7 @@ traits::make_scope(const std::vector<traits::parallel_conf_t> &parallel_confs,
                    const std::vector<traits::target_parameter_t> &target_parameters,
                    const std::vector<traits::workload_size_t> workload_sizes) {
     return std::make_shared<test_scope<teststub::traits>>(parallel_confs, target_parameters,
-                                                           workload_sizes);
+                                                          workload_sizes);
 }
 
 std::shared_ptr<input_maker_base> traits::make_input_maker(test_scope<traits> &scope) {
@@ -75,41 +81,3 @@ std::shared_ptr<result_t> traits::make_result(const parallel_conf_t &pc,
 
 } // namespace teststub
 
-std::ostream &operator<<(std::ostream &out,
-                         const typename teststub::traits::parallel_conf_t conf) {
-    out << conf.first << "+" << conf.second;
-    return out;
-}
-
-std::ostream &operator<<(std::ostream &out,
-                         const typename teststub::traits::target_parameter_t par) {
-    out << par.first << "+" << par.second;
-    return out;
-}
-
-std::ostream &operator<<(std::ostream &out,
-                         const typename teststub::traits::workload_size_t work) {
-    out << work.first << "+" << work.second;
-    return out;
-}
-
-YAML::Emitter &operator<<(YAML::Emitter &out,
-                          const typename teststub::traits::parallel_conf_t conf) {
-    out << YAML::Key << YAML::Flow << "n" << YAML::Value << conf.first;
-    out << YAML::Key << YAML::Flow << "ppn" << YAML::Value << conf.second;
-    return out;
-}
-
-YAML::Emitter &operator<<(YAML::Emitter &out,
-                          const typename teststub::traits::target_parameter_t par) {
-    out << YAML::Key << YAML::Flow << "Benchmark" << YAML::Value << par.first;
-    out << YAML::Key << YAML::Flow << "Parameter" << YAML::Value << par.second;
-    return out;
-}
-
-YAML::Emitter &operator<<(YAML::Emitter &out,
-                          const typename teststub::traits::workload_size_t work) {
-    out << YAML::Key << YAML::Flow << "Length" << YAML::Value << work.first;
-    out << YAML::Key << YAML::Flow << "Iter" << YAML::Value << work.second;
-    return out;
-}

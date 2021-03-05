@@ -36,7 +36,7 @@ function dnb_yaml-cpp() {
     local V=$(get_field "$2" 2 "=")
     du_github "jbeder" "yaml-cpp" "yaml-cpp-" "$V" "$m"
     local OPTS=""
-    OPTS="$OPTS -DYAML_BUILD_SHARED_LIBS=OFF"
+    OPTS="$OPTS -DYAML_BUILD_SHARED_LIBS=ON"
     OPTS="$OPTS -DYAML_CPP_BUILD_TESTS=OFF"
     OPTS="$OPTS -DYAML_CPP_BUILD_TOOLS=OFF"
     OPTS="$OPTS -DYAML_CPP_BUILD_CONTRIB=OFF"
