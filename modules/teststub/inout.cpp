@@ -203,7 +203,7 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
             }
             if (fabs(result_val - testitem.base[section + "/" + parameter]) > 1e-6) {
 #ifdef DEBUG
-                std::cout << ">> teststub: result_val - testitem.base[section + "/" + parameter] > 1e-6!!! COMPARISON FAILED!" << std::endl;
+                std::cout << ">> teststub: result_val - testitem.base[section + ""/"" + parameter] > 1e-6!!! COMPARISON FAILED!" << std::endl;
 #endif
 
                 status = status_t::F;
