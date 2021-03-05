@@ -193,12 +193,19 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
             } else {
                 sort(v.begin(), v.end());
                 if (v.front() != v.back()) {
+#ifdef DEBUG
+                    std::cout << ">> teststub: v.front() != v.back()!!! COMPARISON FAILED!" << std::endl;
+#endif
                     status = status_t::F;
                     break;
                 }
                 result_val = v[0];
             }
             if (fabs(result_val - testitem.base[section + "/" + parameter]) > 1e-6) {
+#ifdef DEBUG
+                std::cout << ">> teststub: result_val - testitem.base[section + "/" + parameter] > 1e-6!!! COMPARISON FAILED!" << std::endl;
+#endif
+
                 status = status_t::F;
                 break;
             }
