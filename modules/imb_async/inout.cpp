@@ -110,6 +110,7 @@ output_maker::~output_maker() {
 }
 
 void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
+    imb_async::traits traits;
     int n = -1, ppn = -1;
     using val_t = double;
     using vals_t = std::map<int, std::vector<val_t>>;
@@ -140,7 +141,7 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
         for (auto &bp : scope.target_parameters) {
             std::string &benchmark = bp.first;
             std::string &parameter = bp.second;
-            auto str_bp = helpers::conf_to_string(bp);
+            auto str_bp = traits.target_parameter_to_string(bp);
             auto &vals = values[str_bp];
             if (!stream[benchmark])
                 continue;
@@ -193,7 +194,6 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
                 sort(v.begin(), v.end());
                 result_val = helpers::average(v);
             }
-            imb_async::traits traits;
             auto r =
                 traits.make_result({n, ppn}, {benchmark, parameter}, {msglen, niter}, result_val);
             r->to_yaml(out);

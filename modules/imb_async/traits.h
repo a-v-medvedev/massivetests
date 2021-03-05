@@ -50,17 +50,34 @@ struct traits {
                                                          const std::string &outfile);
     std::shared_ptr<result_t> make_result(const parallel_conf_t &pc, const target_parameter_t &tp,
                                           const workload_size_t &ws, value_t value);
+    static std::string parallel_conf_to_string(const parallel_conf_t &c) {
+        std::stringstream ss;
+        ss << c.first << "+" << c.second;
+        return ss.str();
+    }
+    static std::string target_parameter_to_string(const target_parameter_t &tp) {
+        std::stringstream ss;
+        ss << tp.first << "+" << tp.second;
+        return ss.str();
+    }
+    static std::string workload_size_to_string(const workload_size_t &ws) {
+        std::stringstream ss;
+        ss << ws.first << "+" << ws.second;
+        return ss.str();
+    }
+    static void parallel_conf_to_yaml(const parallel_conf_t &c, YAML::Emitter &out) {
+        out << YAML::Key << YAML::Flow << "n" << YAML::Value << c.first;
+        out << YAML::Key << YAML::Flow << "ppn" << YAML::Value << c.second;
+    }
+    static void target_parameter_to_yaml(const target_parameter_t &tp, YAML::Emitter &out) {
+        out << YAML::Key << YAML::Flow << "Benchmark" << YAML::Value << tp.first;
+        out << YAML::Key << YAML::Flow << "Parameter" << YAML::Value << tp.second;
+    }
+    static void workload_size_to_yaml(const workload_size_t &ws, YAML::Emitter &out) {
+        out << YAML::Key << YAML::Flow << "Length" << YAML::Value << ws.first;
+        out << YAML::Key << YAML::Flow << "Iter" << YAML::Value << ws.second;
+    }
 };
 
 } // namespace imb_async
 
-std::ostream &operator<<(std::ostream &out, const typename imb_async::traits::parallel_conf_t conf);
-std::ostream &operator<<(std::ostream &out,
-                         const typename imb_async::traits::target_parameter_t par);
-std::ostream &operator<<(std::ostream &out, const typename imb_async::traits::workload_size_t work);
-YAML::Emitter &operator<<(YAML::Emitter &out,
-                          const typename imb_async::traits::parallel_conf_t conf);
-YAML::Emitter &operator<<(YAML::Emitter &out,
-                          const typename imb_async::traits::target_parameter_t par);
-YAML::Emitter &operator<<(YAML::Emitter &out,
-                          const typename imb_async::traits::workload_size_t work);
