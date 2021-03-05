@@ -44,6 +44,8 @@
 
 namespace teststub {
 
+enum status_t { P=0, F=1, N=2, S=3, T=4, A=5, C=6, E=7};
+
 input_maker::input_maker(test_scope<teststub::traits> &_scope)
     : was_written(false), scope(_scope) {
     assert(scope.workload_sizes.size() == 1);
@@ -106,6 +108,7 @@ int check_if_failed(const std::string &s) {
     return 0;
 }
 
+
 void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
     teststub::traits traits;
     int n = -1, ppn = -1;
@@ -113,7 +116,7 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
     using val_t = double;
     using vals_t = std::map<decltype(workload), std::vector<val_t>>;
     std::map<std::string, vals_t> values;
-    int status = 0;
+    int status = status_t::P;
     for (auto &proc : attempts) {
         int j = proc->jobid;
         if (n == -1)
@@ -123,7 +126,7 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
         assert(n == proc->n);
         assert(ppn == proc->ppn);
         if (proc->retval) {
-            status = 2;
+            status = status_t::N;
             break;
         }
         std::string infile =
@@ -181,7 +184,7 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
                 std::cout << ">> teststub: output: nothing found for section/parameter: " << it.first
                           << std::endl;
 #endif
-                status = 1;
+                status = status_t::N;
                 break;
             }
             val_t result_val = 0.0;
@@ -190,13 +193,13 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
             } else {
                 sort(v.begin(), v.end());
                 if (v.front() != v.back()) {
-                    status = 1;
+                    status = status_t::F;
                     break;
                 }
                 result_val = v[0];
             }
-            if (result_val != testitem.base[section + "/" + parameter]) {
-                status = 1;
+            if (fabs(result_val - testitem.base[section + "/" + parameter]) > 1e-6) {
+                status = status_t::F;
                 break;
             }
         }
