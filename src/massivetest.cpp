@@ -32,16 +32,6 @@
 #include "scope.h"
 
 #include "module.h"
-/*
-#if MODULE == imb_async
-#include "modules/imb_async/traits.h"
-#include "modules/imb_async/inout.h"
-#endif
-#if MODULE == teststub
-#include "modules/teststub/traits.h"
-#include "modules/teststub/inout.h"
-#endif
-*/
 // FIXME hide it somewhere
 template <>
 int test_scope<MODULE::traits>::counter = 0;

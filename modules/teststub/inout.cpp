@@ -75,7 +75,13 @@ void input_maker::write_out(const std::string &input_file_name) {
 }
 
 void input_maker::make(std::string &input_yaml, std::string &psubmit_options, std::string &args) {
+
 	assert(scope.workload_sizes.size() == 1);
+    if (testitem.skip) {
+        psubmit_options = "";
+        args = "";
+        return;
+    }
 	const auto workload = scope.workload_sizes[0];
     input_yaml = "./input_" + workload.workload + ".yaml";
     psubmit_options = "./psubmit.opt";
@@ -125,6 +131,10 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
             ppn = proc->ppn;
         assert(n == proc->n);
         assert(ppn == proc->ppn);
+        if (proc->skipped) {
+            status = status_t::S;
+            break;
+        }
         if (proc->retval) {
             status = status_t::N;
             break;

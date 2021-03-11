@@ -34,7 +34,8 @@ struct process {
     int n, ppn;
     pid_t pid = 0;
     int jobid = 0;
-	int retval = 0;
+    int retval = 0;
+    bool skipped = false;
     std::string state = "NONE";
     int pipe_fd[2];
     FILE *outfp = nullptr;
@@ -47,6 +48,12 @@ struct process {
 
     void start(const std::string &input_yaml, const std::string &psubmit_options,
                const std::string &args) {
+        if (psubmit_options == "" && args == "") {
+            state = "FINISHED";
+            pid = 0;
+            skipped = true;
+            return;
+        }
         (void)input_yaml;
         pipe(pipe_fd);
         pid = fork();
