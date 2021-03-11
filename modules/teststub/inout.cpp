@@ -49,8 +49,8 @@ enum status_t { P=0, F=1, N=2, S=3, T=4, A=5, C=6, E=7};
 input_maker::input_maker(test_scope<teststub::traits> &_scope)
     : was_written(false), scope(_scope) {
     assert(scope.workload_sizes.size() == 1);
-    const auto workload = scope.workload_sizes[0];
-	testitem.load(workload.as_string());
+    const auto workload_conf = scope.workload_conf;
+	testitem.load(workload_conf.first + "/" + scope.workload_sizes[0].first);
 }
 
 void input_maker::write_out(const std::string &input_file_name) {
@@ -82,8 +82,8 @@ void input_maker::make(std::string &input_yaml, std::string &psubmit_options, st
         args = "";
         return;
     }
-	const auto workload = scope.workload_sizes[0];
-    input_yaml = "./input_" + workload.workload + ".yaml";
+	const auto workload = scope.workload_conf.first;
+    input_yaml = "./input_" + workload + ".yaml";
     psubmit_options = "./psubmit.opt";
     args = "-load " + input_yaml + " -output " + " result.%PSUBMIT_JOBID%.yaml";
     char *aux_opts;
@@ -98,8 +98,8 @@ output_maker::output_maker(test_scope<teststub::traits> &_scope, const std::stri
     out << YAML::BeginSeq;
     out << YAML::Flow;
     assert(scope.workload_sizes.size() == 1);
-    const auto workload = scope.workload_sizes[0];
-	testitem.load(workload.as_string());
+    const auto workload_conf = scope.workload_conf;
+    testitem.load(workload_conf.first + "/" + scope.workload_sizes[0].first);
 }
 
 output_maker::~output_maker() {
@@ -118,9 +118,10 @@ int check_if_failed(const std::string &s) {
 void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
     teststub::traits traits;
     int n = -1, ppn = -1;
-	const auto workload = scope.workload_sizes[0];
+	const auto workload = scope.workload_conf;
+	const auto size = scope.workload_sizes[0];
     using val_t = double;
-    using vals_t = std::map<decltype(workload), std::vector<val_t>>;
+    using vals_t = std::map<decltype(size), std::vector<val_t>>;
     std::map<std::string, vals_t> values;
     int status = status_t::P;
     for (auto &proc : attempts) {
@@ -170,7 +171,7 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
             if (!sec[parameter])
                 continue;
             const auto &p = sec[parameter].as<YAML::Node>();
-            vals[workload].push_back(p.as<val_t>());
+            vals[size].push_back(p.as<val_t>());
         }
     }
     // NOTE: commented out this assert: lets handle missing input files as non-fatal case
@@ -188,7 +189,7 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
             std::cout << ">> teststub: output: section=" << section << " parameter=" << parameter
                       << std::endl;
 #endif
-            auto &v = vals[workload];
+            auto &v = vals[size];
             if (v.size() == 0) {
 #ifdef DEBUG
                 std::cout << ">> teststub: output: nothing found for section/parameter: " << it.first
@@ -221,7 +222,7 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
             }
         }
     }
-    auto r = traits.make_result({n, ppn}, {"-", "-"}, workload, status);
+    auto r = traits.make_result(workload, {n, ppn}, {"", ""}, size, status);
     r->to_yaml(out);
     nresults++;
     std::cout << "OUTPUT: teststub: {" << n << "," << ppn << "} " << nresults

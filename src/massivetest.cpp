@@ -65,18 +65,28 @@ void start(const std::vector<std::shared_ptr<test_scope<TRAITS>>> &scopes,
 template <typename TRAITS>
 void parse_and_start(const args_parser &parser, int nqueued, int repeats) {
     TRAITS traits;
-    auto target_parameters = traits.parse_and_make_target_parameters(parser, "workloads");
+    auto workload_confs = traits.parse_and_make_target_parameters(parser, "workloads");
+    auto target_parameters = traits.parse_and_make_target_parameters(parser, "parameters");
     auto parallel_confs = traits.parse_and_make_parallel_confs(parser, "scale");
     auto workload_sizes = traits.parse_and_make_workload_sizes(parser, "sizes");
 
     helpers::trunc_file("output_initial.yaml");
-    start<TRAITS>({traits.make_scope(parallel_confs, target_parameters, workload_sizes)},
-                  "output_initial.yaml", nqueued, repeats);
+    if (workload_confs.size() == 0) {
+        typename TRAITS::workload_conf_t wc { "xxx", "purempi" };
+        start<TRAITS>({traits.make_scope(wc, parallel_confs, target_parameters, workload_sizes)},
+                      "output_initial.yaml", nqueued, repeats);
+    } else {
+        start<TRAITS>(traits.make_scopes(workload_confs, parallel_confs, target_parameters, 
+                       workload_sizes),
+                      "output_initial.yaml", nqueued, repeats);
+    }
 }
 
 int main(int argc, char **argv) {
     args_parser parser(argc, argv);
     parser.add_vector<std::string>("workloads", "")
+        .set_mode(args_parser::option::APPLY_DEFAULTS_ONLY_WHEN_MISSING);
+    parser.add_vector<std::string>("parameters", "")
         .set_mode(args_parser::option::APPLY_DEFAULTS_ONLY_WHEN_MISSING);
     parser.add_vector<std::string>("scale", "")
         .set_mode(args_parser::option::APPLY_DEFAULTS_ONLY_WHEN_MISSING);

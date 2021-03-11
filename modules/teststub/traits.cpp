@@ -36,6 +36,11 @@
 
 namespace teststub {
 
+std::vector<traits::workload_conf_t> parse_and_make_workload_confs(const args_parser &parser,
+														   const std::string &name) {
+	return helpers::parsers_vector_to_vector<std::string, std::string>(parser, name);
+}
+    
 std::vector<traits::target_parameter_t>
 traits::parse_and_make_target_parameters(const args_parser &parser, const std::string &name) {
     return helpers::parsers_vector_to_vector<std::string, std::string>(parser, name);
@@ -48,20 +53,38 @@ traits::parse_and_make_parallel_confs(const args_parser &parser, const std::stri
 
 std::vector<traits::workload_size_t>
 traits::parse_and_make_workload_sizes(const args_parser &parser, const std::string &name) {
+    return helpers::parsers_vector_to_vector<std::string, int>(parser, name);
+/*
     auto vpairs = helpers::parsers_map_to_vector<std::string, std::string>(parser, name);
     std::vector<traits::workload_size_t> vwlds;
     for (auto &p : vpairs) {
         vwlds.push_back({p.first, p.second});
     }
     return vwlds;
+*/
 }
 
 std::shared_ptr<test_scope<traits>>
-traits::make_scope(const std::vector<traits::parallel_conf_t> &parallel_confs,
+traits::make_scope(const traits::workload_conf_t &workload_conf,
+                   const std::vector<traits::parallel_conf_t> &parallel_confs,
                    const std::vector<traits::target_parameter_t> &target_parameters,
                    const std::vector<traits::workload_size_t> workload_sizes) {
-    return std::make_shared<test_scope<teststub::traits>>(parallel_confs, target_parameters,
+    return std::make_shared<test_scope<teststub::traits>>(workload_conf, 
+                                                          parallel_confs, 
+                                                          target_parameters,
                                                           workload_sizes);
+}
+
+std::vector<std::shared_ptr<test_scope<traits>>>
+traits::make_scopes(const std::vector<traits::workload_conf_t> &workload_confs,
+                    const std::vector<traits::parallel_conf_t> &parallel_confs,
+                    const std::vector<traits::target_parameter_t> &target_parameters,
+                    const std::vector<traits::workload_size_t> workload_sizes) {
+    std::vector<std::shared_ptr<test_scope<traits>>> vec;
+    for (const auto &w : workload_confs) {
+        vec.push_back(make_scope(w, parallel_confs, target_parameters, workload_sizes));
+    }
+    return vec;
 }
 
 std::shared_ptr<input_maker_base> traits::make_input_maker(test_scope<traits> &scope) {
@@ -73,10 +96,11 @@ std::shared_ptr<output_maker_base> traits::make_output_maker(test_scope<traits> 
     return std::make_shared<output_maker>(scope, outfile);
 }
 
-std::shared_ptr<result_t> traits::make_result(const parallel_conf_t &pc,
+std::shared_ptr<result_t> traits::make_result(const workload_conf_t &wc, 
+                                              const parallel_conf_t &pc,
                                               const target_parameter_t &tp,
                                               const workload_size_t &ws, value_t value) {
-    return std::make_shared<result<traits>>(pc, tp, ws, value);
+    return std::make_shared<result<traits>>(wc, pc, tp, ws, value);
 }
 
 } // namespace teststub
