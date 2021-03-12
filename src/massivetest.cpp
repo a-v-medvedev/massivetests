@@ -52,9 +52,10 @@ void start(const std::vector<std::shared_ptr<test_scope<TRAITS>>> &scopes,
         test_scope<TRAITS> &scope = *(scopeptr.get());
         auto im = traits.make_input_maker(scope);
         auto om = traits.make_output_maker(scope, outfile);
-        for (auto &nppn : scope.parallel_confs) {
+        auto wc = scope.workload_conf;
+        for (auto &pc : scope.parallel_confs) {
             for (int i = 0; i < repeats; i++)
-                disp.enqueue(nppn, im, om);
+                disp.enqueue(wc, pc, im, om);
         }
     }
     while (!disp.check_if_all_finished()) {

@@ -3,7 +3,7 @@ MODULE ?= imb_async
 STATIC ?= FALSE
 
 override CXXFLAGS += -O2 -std=c++11 -Wall -Wextra -pedantic -I$(THIRDPARTY)/argsparser.bin -I$(THIRDPARTY)/yaml-cpp.bin/include -I. -Isrc -D__USE_BSD 
-override CXXFLAGS += -DMODULE=$(MODULE) -DDEBUG=1
+override CXXFLAGS += -DMODULE=$(MODULE)
 ifeq ($(STATIC),TRUE)
 override LDFLAGS += $(THIRDPARTY)/argsparser.bin/libargsparser.a $(THIRDPARTY)/yaml-cpp.bin/lib/libyaml-cpp.a
 else

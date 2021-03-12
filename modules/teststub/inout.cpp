@@ -33,13 +33,16 @@
 #include "results.h"
 
 #ifndef NATTEMPTS
-#define NATTEMPTS 1   // was: 100 for Lom2
+#define NATTEMPTS 5   // was: 100 for Lom2
 #endif
 
 #ifndef SLEEPTIME
-#define SLEEPTIME 1   // was: 100 for Lom2
+#define SLEEPTIME 10   // was: 100 for Lom2
 #endif
 
+#ifndef MISSING_FILES_FATAL
+#define MISSING_FILES_FATAL 0
+#endif
 
 
 namespace teststub {
@@ -75,17 +78,23 @@ void input_maker::write_out(const std::string &input_file_name) {
 }
 
 void input_maker::make(std::string &input_yaml, std::string &psubmit_options, std::string &args) {
-
 	assert(scope.workload_sizes.size() == 1);
     if (testitem.skip) {
         psubmit_options = "";
         args = "";
         return;
     }
-	const auto workload = scope.workload_conf.first;
+	const auto &workload = scope.workload_conf.first;
+	const auto &mode = scope.workload_conf.second;
+    psubmit_options = "./psubmit_" + mode + ".opt";
     input_yaml = "./input_" + workload + ".yaml";
-    psubmit_options = "./psubmit.opt";
-    args = "-load " + input_yaml + " -output " + " result.%PSUBMIT_JOBID%.yaml";
+    args = std::string("-load ") + input_yaml;
+    args += std::string(" -output ") + "result.%PSUBMIT_JOBID%.yaml";
+    args += std::string(" -mode ") + mode;
+    if (testitem.timeout) {
+        args += std::string(" -timeout ") + std::to_string(testitem.timeout);
+    }
+
     char *aux_opts;
     if ((aux_opts = getenv("MASSIVETEST_AUX_ARGS"))) {
         args += " " + std::string(aux_opts);
@@ -114,11 +123,10 @@ int check_if_failed(const std::string &s) {
     return 0;
 }
 
-
 void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
     teststub::traits traits;
     int n = -1, ppn = -1;
-	const auto workload = scope.workload_conf;
+	const auto wconf = scope.workload_conf;
 	const auto size = scope.workload_sizes[0];
     using val_t = double;
     using vals_t = std::map<decltype(size), std::vector<val_t>>;
@@ -149,9 +157,12 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
         }
         std::ifstream in;
         if (!helpers::try_to_open_file<NATTEMPTS, SLEEPTIME>(in, infile)) {
+#if MISSING_FILES_FATAL            
             // NOTE: commented out this return: let us handle missing input files as a non-fatal case
-            // std::cout << "OUTPUT: teststub: stop processing: can't open input file: " << infile
-            // << std::endl; return;
+            std::cout << "OUTPUT: teststub: stop processing: can't open input file: " << infile
+                      << std::endl; 
+            return;
+#endif            
             std::cout << "OUTPUT: teststub: warning: can't open input file: " << infile
                       << std::endl;
             continue;
@@ -178,6 +189,9 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
     // assert(values.size() == attempts.size());
     attempts.resize(0);
     int nresults = 0;
+    if (values.size() == 0) {
+        status = status_t::N;
+    }
     if (!status) {
         for (auto &it : values) {
             auto sp = helpers::str_split(it.first, '+');
@@ -222,10 +236,11 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
             }
         }
     }
-    auto r = traits.make_result(workload, {n, ppn}, {"", ""}, size, status);
+    auto r = traits.make_result(wconf, {n, ppn}, {"", ""}, size, status);
     r->to_yaml(out);
     nresults++;
-    std::cout << "OUTPUT: teststub: {" << n << "," << ppn << "} " << nresults
+    std::cout << "OUTPUT: teststub: {" << wconf.first << "," << wconf.second << "}"
+              << " on parallel conf: {" << n << "," << ppn << "} " << nresults
               << " resulting items registered" << std::endl;
 }
 

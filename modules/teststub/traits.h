@@ -36,18 +36,6 @@ struct traits {
     using parallel_conf_t = std::pair<int, int>;
     using target_parameter_t = std::pair<std::string, std::string>;
     using workload_size_t = std::pair<std::string, int>;
-    /*
-    struct workload_size_t { 
-        std::string matrix; 
-        int niters;
-        bool operator<(const workload_size_t &other) const { return other.matrix < matrix && other.niters < niters; }
-        std::string as_string() const { 
-	        std::stringstream ss;
-    	    ss << matrix << "+" << niters;
-        	return ss.str();
-        }
-    };
-    */
     using value_t = int;
     std::vector<workload_conf_t> parse_and_make_workload_confs(const args_parser &parser,
                                                                const std::string &name);

@@ -42,20 +42,23 @@ class test_scope;
 template <typename TRAITS>
 struct dispatcher {
     const std::vector<std::string> possible_states{"NONE", "Q", "E", "R", "DONE", "FINISHED"};
+    using workload_conf_t = typename TRAITS::workload_conf_t;
     using parallel_conf_t = typename TRAITS::parallel_conf_t;
     std::vector<std::shared_ptr<process>> waiting_processes;
     std::vector<std::shared_ptr<process>> processes;
-    std::map<parallel_conf_t, std::vector<std::shared_ptr<process>>> attempts;
+    std::map<std::pair<workload_conf_t, parallel_conf_t>, std::vector<std::shared_ptr<process>>> attempts;
     size_t nattempts;
     size_t nqueued;
     uint64_t oldcs = 0;
     size_t finished = 0, queued = 0, done = 0, error = 0;
     dispatcher(int _nattempts, int _nqueued) : nattempts(_nattempts), nqueued(_nqueued) {}
 
-    void enqueue(parallel_conf_t conf, std::shared_ptr<input_maker_base> im,
+    void enqueue(workload_conf_t wconf, parallel_conf_t pconf, 
+                 std::shared_ptr<input_maker_base> im,
                  std::shared_ptr<output_maker_base> om) {
+        auto conf = std::make_pair(wconf, pconf);
         auto &already_submitted = attempts[conf];
-        std::shared_ptr<process> proc(std::make_shared<process>(conf, im, om));
+        std::shared_ptr<process> proc(std::make_shared<process>(pconf, im, om));
         already_submitted.push_back(proc);
         waiting_processes.push_back(proc);
         start_more_processes();
@@ -133,6 +136,9 @@ struct dispatcher {
         bool all_is_done = ((cnt == processes.size()) && (waiting_processes.size() == 0));
         if (some_new_finished_processes || all_is_done) {
             for (auto &it : attempts) {
+                auto &conf = it.first;
+                auto &wconf = conf.first;
+                auto &pconf = conf.second;
                 auto &procs = it.second;
                 if (procs.size() != nattempts)
                     continue;
@@ -144,7 +150,8 @@ struct dispatcher {
                     continue;
 #ifdef DEBUG
                 std::cout << ">> dispatcher: " << nattempts << " attempts for: {"
-                          << (it.first).first << "," << (it.first).second
+                          << wconf.first << "," << wconf.second << "} in parallel conf: {"
+                          << pconf.first << "," << pconf.second
                           << "} finished, procssing output" << std::endl;
 #endif
                 procs[0]->om->make(procs);

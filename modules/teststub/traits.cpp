@@ -54,14 +54,6 @@ traits::parse_and_make_parallel_confs(const args_parser &parser, const std::stri
 std::vector<traits::workload_size_t>
 traits::parse_and_make_workload_sizes(const args_parser &parser, const std::string &name) {
     return helpers::parsers_vector_to_vector<std::string, int>(parser, name);
-/*
-    auto vpairs = helpers::parsers_map_to_vector<std::string, std::string>(parser, name);
-    std::vector<traits::workload_size_t> vwlds;
-    for (auto &p : vpairs) {
-        vwlds.push_back({p.first, p.second});
-    }
-    return vwlds;
-*/
 }
 
 std::shared_ptr<test_scope<traits>>
