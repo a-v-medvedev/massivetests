@@ -118,9 +118,23 @@ output_maker::~output_maker() {
     ofs << out.c_str();
 }
 
-int check_if_failed(const std::string &s) {
-    (void)s;
-    return 0;
+int check_if_failed(const std::string &s, const std::string &jid) {
+    std::string stackfile = s + "/stacktrace." + jid;
+    std::ifstream in;
+	if (helpers::try_to_open_file<NATTEMPTS, SLEEPTIME>(in, stackfile)) {
+		std::cout << "OUTPUT: found stackfile: " << stackfile << std::endl;
+		std::string status;
+		std::getline(in, status);
+        auto st = helpers::str_split(status, ' ');
+        if (st[0] == ">>" && st[1] == "STATUS:") {
+		    char c = st[2][0];
+			if (c == 'T') return status_t::T;
+			if (c == 'A') return status_t::A;
+			if (c == 'C') return status_t::C;
+			if (c == 'E') return status_t::E;
+		}
+	}
+    return status_t::P;
 }
 
 void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
@@ -150,8 +164,8 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
         }
         std::string infile =
             "results." + std::to_string(j) + "/result." + std::to_string(j) + ".yaml";
-        auto st = check_if_failed("results." + std::to_string(j));
-        if (st) {
+        auto st = check_if_failed("results." + std::to_string(j), std::to_string(j));
+        if (st != status_t::P) {
             status = st;
             break;
         }
@@ -189,10 +203,10 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
     // assert(values.size() == attempts.size());
     attempts.resize(0);
     int nresults = 0;
-    if (values.size() == 0) {
+    if (status == status_t::P && values.size() == 0) {
         status = status_t::N;
     }
-    if (!status) {
+    if (status == status_t::P) {
         for (auto &it : values) {
             auto sp = helpers::str_split(it.first, '+');
             assert(sp.size() == 2);
