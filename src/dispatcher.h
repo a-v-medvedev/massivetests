@@ -136,9 +136,6 @@ struct dispatcher {
         bool all_is_done = ((cnt == processes.size()) && (waiting_processes.size() == 0));
         if (some_new_finished_processes || all_is_done) {
             for (auto &it : attempts) {
-                auto &conf = it.first;
-                auto &wconf = conf.first;
-                auto &pconf = conf.second;
                 auto &procs = it.second;
                 if (procs.size() != nattempts)
                     continue;
@@ -149,6 +146,9 @@ struct dispatcher {
                 if (!all_finished)
                     continue;
 #ifdef DEBUG
+                auto &conf = it.first;
+                auto &wconf = conf.first;
+                auto &pconf = conf.second;
                 std::cout << ">> dispatcher: " << nattempts << " attempts for: {"
                           << wconf.first << "," << wconf.second << "} in parallel conf: {"
                           << pconf.first << "," << pconf.second

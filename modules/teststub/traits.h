@@ -36,7 +36,7 @@ struct traits {
     using parallel_conf_t = std::pair<int, int>;
     using target_parameter_t = std::pair<std::string, std::string>;
     using workload_size_t = std::pair<std::string, int>;
-    using value_t = int;
+    using value_t = std::string;
     std::vector<workload_conf_t> parse_and_make_workload_confs(const args_parser &parser,
                                                                const std::string &name);
     std::vector<target_parameter_t> parse_and_make_target_parameters(const args_parser &parser,

@@ -49,7 +49,7 @@ struct result : public result_t {
     result() {}
     result(workload_conf_t _workload_conf, parallel_conf_t _parallel_conf, 
            target_parameter_t _target_parameter,
-           workload_size_t _workload_size, double _value)
+           workload_size_t _workload_size, value_t _value)
         : workload_conf(_workload_conf), parallel_conf(_parallel_conf), target_parameter(_target_parameter),
           workload_size(_workload_size), value(_value) {
         make_index();

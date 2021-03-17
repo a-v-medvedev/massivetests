@@ -47,7 +47,22 @@
 
 namespace teststub {
 
-enum status_t { P=0, F=1, N=2, S=3, T=4, A=5, C=6, E=7};
+enum status_t { P=0, F=1, N=2, S=3, T=4, A=5, C=6, E=7 };
+
+static const std::string status_to_string(status_t st) {
+    switch (st) {
+        case status_t::P: return "P";
+        case status_t::F: return "F";
+        case status_t::N: return "N";
+        case status_t::S: return "S";
+        case status_t::T: return "T";
+        case status_t::A: return "A";
+        case status_t::C: return "C";
+        case status_t::E: return "E";
+        default: return "?";
+    }
+    return "?";
+}
 
 input_maker::input_maker(test_scope<teststub::traits> &_scope)
     : was_written(false), scope(_scope) {
@@ -118,7 +133,7 @@ output_maker::~output_maker() {
     ofs << out.c_str();
 }
 
-int check_if_failed(const std::string &s, const std::string &jid) {
+status_t check_if_failed(const std::string &s, const std::string &jid) {
     std::string stackfile = s + "/stacktrace." + jid;
     std::ifstream in;
 	if (helpers::try_to_open_file<NATTEMPTS, SLEEPTIME>(in, stackfile)) {
@@ -145,7 +160,7 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
     using val_t = double;
     using vals_t = std::map<decltype(size), std::vector<val_t>>;
     std::map<std::string, vals_t> values;
-    int status = status_t::P;
+    status_t status = status_t::P;
     for (auto &proc : attempts) {
         int j = proc->jobid;
         if (n == -1)
@@ -250,7 +265,7 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
             }
         }
     }
-    auto r = traits.make_result(wconf, {n, ppn}, {"", ""}, size, status);
+    auto r = traits.make_result(wconf, {n, ppn}, {"", ""}, size, status_to_string(status));
     r->to_yaml(out);
     nresults++;
     std::cout << "OUTPUT: teststub: {" << wconf.first << "," << wconf.second << "}"
