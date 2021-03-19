@@ -17,7 +17,7 @@
 #
 #
 
-source massive_tests.inc
+source ../massive_tests.inc
 
 FIRST="$1"
 SECOND="$2"

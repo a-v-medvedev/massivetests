@@ -17,9 +17,13 @@
 #
 #
 
+
 function set_specific_params() {
     local MODE=$1
     local SUBMODE=$2
+    if [ "$MASSIVE_TESTS_DRIVER" != "imb-async" ]; then
+        fatal "MASSIVE_TESTS_DRIVER must be imb-async."
+    fi
     cat /dev/null > ./local_impi_env.sh
     echo "export I_MPI_DEBUG=5" >> ./local_impi_env.sh
     export MASSIVETEST_AUX_ARGS=""

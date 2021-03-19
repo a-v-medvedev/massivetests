@@ -94,3 +94,16 @@ function massivetest-run() {
     ./massivetest --driver="$MASSIVE_TESTS_DRIVER" --scale=${NPPNS} --nqueued=$MASSIVE_TESTS_NQUEUED --sizes=$SIZES --repeats=$MASSIVE_TESTS_EXEC_REPEATS --workloads=$WORKLOADS
 }
 
+[ -f ./env.sh ] && source ./env.sh || fatal "no env.sh file."
+env_init_global
+
+set -eu
+
+[ -e psubmit.bin ] || fatal "psubmit.bin directory or symlink required."
+[ -e thirdparty ] || fatal "thirdparty directory or symlink required."
+export PATH=$PWD/psubmit.bin:$PATH
+export LD_LIBRARY_PATH=$PWD/thirdparty/yaml-cpp.bin/lib:$PWD/thirdparty/argsparser.bin:$LD_LIBRARY_PATH
+[ -x ./massivetest ] || fatal "massivetest executable is required."
+[ -e ./params.inc ] || fatal "params.inc executable is required."
+[ -e ./modeset.inc ] || fatal "modeset.inc executable is required."
+
