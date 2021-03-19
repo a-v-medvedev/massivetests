@@ -91,8 +91,10 @@ std::shared_ptr<output_maker_base> traits::make_output_maker(test_scope<traits> 
 std::shared_ptr<result_t> traits::make_result(const workload_conf_t &wc, 
                                               const parallel_conf_t &pc,
                                               const target_parameter_t &tp,
-                                              const workload_size_t &ws, value_t value) {
-    return std::make_shared<result<traits>>(wc, pc, tp, ws, value);
+                                              const workload_size_t &ws, 
+                                              value_t value,
+                                              const std::string &comment) {
+    return std::make_shared<result<traits>>(wc, pc, tp, ws, value, comment);
 }
 
 } // namespace teststub

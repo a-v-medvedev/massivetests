@@ -62,7 +62,8 @@ struct traits {
                                           const parallel_conf_t &pc, 
                                           const target_parameter_t &tp,
                                           const workload_size_t &ws, 
-                                          value_t status);
+                                          value_t status,
+                                          const std::string &comment = "");
     static std::string workload_conf_to_string(const workload_conf_t &c) {
         if (c.first == "" && c.second == "")
             return "";

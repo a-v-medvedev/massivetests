@@ -161,6 +161,7 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
     using vals_t = std::map<decltype(size), std::vector<val_t>>;
     std::map<std::string, vals_t> values;
     status_t status = status_t::P;
+    std::string comment;
     for (auto &proc : attempts) {
         int j = proc->jobid;
         if (n == -1)
@@ -170,10 +171,12 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
         assert(n == proc->n);
         assert(ppn == proc->ppn);
         if (proc->skipped) {
+            comment = "Marked as skipped";
             status = status_t::S;
             break;
         }
         if (proc->retval) {
+            comment = std::string("Non-zero return code: ") + std::to_string(proc->retval);
             status = status_t::N;
             break;
         }
@@ -181,6 +184,7 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
             "results." + std::to_string(j) + "/result." + std::to_string(j) + ".yaml";
         auto st = check_if_failed("results." + std::to_string(j), std::to_string(j));
         if (st != status_t::P) {
+            comment = std::string("dir=results.") + std::to_string(j);
             status = st;
             break;
         }
@@ -219,6 +223,7 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
     attempts.resize(0);
     int nresults = 0;
     if (status == status_t::P && values.size() == 0) {
+        comment = "No data found";
         status = status_t::N;
     }
     if (status == status_t::P) {
@@ -238,6 +243,7 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
                 std::cout << ">> teststub: output: nothing found for section/parameter: " << it.first
                           << std::endl;
 #endif
+                comment = std::string("No data for par=") + it.first;
                 status = status_t::N;
                 break;
             }
@@ -248,24 +254,26 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
                 sort(v.begin(), v.end());
                 if (v.front() != v.back()) {
 #ifdef DEBUG
-                    std::cout << ">> teststub: v.front() != v.back()!!! COMPARISON FAILED!" << std::endl;
+                    std::cout << ">> teststub: v.front() != v.back(). ATTEMPTS COMPARISON FAILED!" << std::endl;
 #endif
+                    comment = std::string("Attempts comparison failed par=") + it.first + std::string(" diff=") + std::to_string(fabs(v.front() - v.back())); 
                     status = status_t::F;
                     break;
                 }
                 result_val = v[0];
             }
-            if (fabs(result_val - testitem.base[section + "/" + parameter]) > 1e-6) {
+            double diff = fabs(result_val - testitem.base[section + "/" + parameter]);
+            if (diff > 1e-6) {
 #ifdef DEBUG
-                std::cout << ">> teststub: result_val - testitem.base[section + ""/"" + parameter] > 1e-6!!! COMPARISON FAILED!" << std::endl;
+                std::cout << ">> teststub: diff > 1e-6. GOLD VALUE COMPARISON FAILED!" << std::endl;
 #endif
-
+                comment = std::string("Gold value comparison failed par=") + it.first + std::string(" diff=") + std::to_string(diff); 
                 status = status_t::F;
                 break;
             }
         }
     }
-    auto r = traits.make_result(wconf, {n, ppn}, {"", ""}, size, status_to_string(status));
+    auto r = traits.make_result(wconf, {n, ppn}, {"", ""}, size, status_to_string(status), comment);
     r->to_yaml(out);
     nresults++;
     std::cout << "OUTPUT: teststub: {" << wconf.first << "," << wconf.second << "}"
