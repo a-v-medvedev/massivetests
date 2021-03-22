@@ -1,0 +1,58 @@
+#!/bin/bash
+#
+#   This file is part of massivetest.
+#
+#   Massivetest is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    Foobar is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with Foobar.  If not, see <https://www.gnu.org/licenses/>.
+#
+#
+
+export MASSIVE_TESTS_DRIVER="imb_async"
+
+# Number of sumultaineously queued:
+export MASSIVE_TESTS_NQUEUED=1
+
+# Repeats in execution:
+MASSIVE_TESTS_EXEC_REPEATS_BASE=1
+MASSIVE_TESTS_EXEC_REPEATS_COMPETING=3
+
+# Scope:
+export MASSIVE_TESTS_NODES="2 4"
+export MASSIVE_TESTS_PPNS=$PSUBMIT_OPTS_PPN
+
+# Sizes:
+export MASSIVE_TESTS_SIZES="4 512 16384 131072 4194304"
+export MASSIVE_TESTS_REPEATS="1000 1000 500 50 10"
+
+export MASSIVE_TESTS_WORKLOADS=imb-async
+export MASSIVE_TESTS_MODES=none
+
+# Workload & params:
+#SECTIONS_BASE="sync_pt2pt sync_allreduce sync_na2a sync_rma_pt2pt"
+SECTIONS_BASE="sync_pt2pt sync_allreduce sync_na2a"
+PARAMETERS_BASE="tavg"
+
+#SECTIONS_COMPETING="async_pt2pt async_allreduce async_na2a async_rma_pt2pt"
+SECTIONS_COMPETING="async_pt2pt async_allreduce async_na2a"
+PARAMETERS_COMPETING="over_full"
+
+# Modes and submodes:
+MODES="none calc calc_progress"
+SUBMODES="avg"
+
+# --- Calc cycle duration for each workload size, comma-separated (machine-specific!)
+export MASSIVETEST_CALCTIME="10,20,100,2000,25000"
+
+# --- Calc cycle calibration parameter (machine-specific!)
+export MASSIVETEST_CPER10USEC=$PSUBMIT_OPTS_CPER10USEC
+
