@@ -112,6 +112,7 @@ output_maker::~output_maker() {
 void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
     imb_async::traits traits;
     int n = -1, ppn = -1;
+    const auto wconf = scope.workload_conf;
     using val_t = double;
     using vals_t = std::map<int, std::vector<val_t>>;
     std::map<std::string, vals_t> values;
@@ -195,7 +196,7 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
                 result_val = helpers::average(v);
             }
             auto r =
-                traits.make_result({n, ppn}, {benchmark, parameter}, {msglen, niter}, result_val);
+                traits.make_result(wconf, {n, ppn}, {benchmark, parameter}, {msglen, niter}, result_val);
             r->to_yaml(out);
 #ifdef DEBUG
             std::cout << ">> imb-async: output: result written: " << r->get_index() << std::endl;

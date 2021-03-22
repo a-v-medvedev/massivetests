@@ -94,13 +94,14 @@ int main(int argc, char **argv) {
     parser.add_map("sizes", "", ',', ':');
     parser.add<int>("nqueued", 5);
     parser.add<int>("repeats", 10);
-    parser.add<std::string>("driver", TOSTR(MODULE));
+    std::string a = MODULESTR;
+    parser.add<std::string>("driver", a);
     if (!parser.parse())
         return 1;
     int nqueued = parser.get<int>("nqueued");
     int repeats = parser.get<int>("repeats");
     auto driver = parser.get<std::string>("driver");    
-    if (driver == TOSTR(MODULE)) {
+    if (driver == MODULESTR) {
         parse_and_start<MODULE::traits>(parser, nqueued, repeats);
     } else {
         std::cout << "Unknown driver: " << driver << std::endl;

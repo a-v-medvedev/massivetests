@@ -31,10 +31,13 @@ class result_t;
 namespace imb_async {
 
 struct traits {
+	using workload_conf_t = std::pair<std::string, std::string>;
     using parallel_conf_t = std::pair<int, int>;
     using target_parameter_t = std::pair<std::string, std::string>;
     using workload_size_t = std::pair<size_t, int>;
     using value_t = double;
+    std::vector<workload_conf_t> parse_and_make_workload_confs(const args_parser &parser,
+                                                               const std::string &name);
     std::vector<target_parameter_t> parse_and_make_target_parameters(const args_parser &parser,
                                                                      const std::string &name);
     std::vector<parallel_conf_t> parse_and_make_parallel_confs(const args_parser &parser,
@@ -42,14 +45,31 @@ struct traits {
     std::vector<workload_size_t> parse_and_make_workload_sizes(const args_parser &parser,
                                                                const std::string &name);
     std::shared_ptr<test_scope<traits>>
-    make_scope(const std::vector<traits::parallel_conf_t> &parallel_confs,
+    make_scope(const workload_conf_t &c,
+			   const std::vector<traits::parallel_conf_t> &parallel_confs,
                const std::vector<traits::target_parameter_t> &target_parameters,
                const std::vector<traits::workload_size_t> workload_sizes);
+    std::vector<std::shared_ptr<test_scope<traits>>>
+    make_scopes(const std::vector<traits::workload_conf_t> &workload_confs,
+                const std::vector<traits::parallel_conf_t> &parallel_confs,
+                const std::vector<traits::target_parameter_t> &target_parameters,
+                const std::vector<traits::workload_size_t> workload_sizes);
     std::shared_ptr<input_maker_base> make_input_maker(test_scope<traits> &scope);
     std::shared_ptr<output_maker_base> make_output_maker(test_scope<traits> &scope,
                                                          const std::string &outfile);
-    std::shared_ptr<result_t> make_result(const parallel_conf_t &pc, const target_parameter_t &tp,
-                                          const workload_size_t &ws, value_t value);
+    std::shared_ptr<result_t> make_result(const workload_conf_t &c,
+                                          const parallel_conf_t &pc, 
+                                          const target_parameter_t &tp,
+                                          const workload_size_t &ws, 
+                                          value_t value,
+										  const std::string &comment = "");
+    static std::string workload_conf_to_string(const workload_conf_t &c) {
+        if (c.first == "" && c.second == "")
+            return "";
+        std::stringstream ss;
+        ss << c.first << "+" << c.second;
+        return ss.str();
+    }
     static std::string parallel_conf_to_string(const parallel_conf_t &c) {
         std::stringstream ss;
         ss << c.first << "+" << c.second;
@@ -64,6 +84,12 @@ struct traits {
         std::stringstream ss;
         ss << ws.first << "+" << ws.second;
         return ss.str();
+    }
+    static void workload_conf_to_yaml(const workload_conf_t &c, YAML::Emitter &out) {
+        if (c.first == "" && c.second == "")
+            return;
+        out << YAML::Key << YAML::Flow << "Workload" << YAML::Value << c.first;
+        out << YAML::Key << YAML::Flow << "Mode" << YAML::Value << c.second;
     }
     static void parallel_conf_to_yaml(const parallel_conf_t &c, YAML::Emitter &out) {
         out << YAML::Key << YAML::Flow << "n" << YAML::Value << c.first;

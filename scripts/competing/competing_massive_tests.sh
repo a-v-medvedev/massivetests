@@ -20,18 +20,7 @@
 
 source ../massive_tests.inc
 
-# [ -f ./env.sh ] && source ./env.sh || fatal "no env.sh file."
-# env_init_global
-# 
-# set -eu
-# 
-# [ -e psubmit.bin ] || fatal "psubmit.bin directory or symlink required."
-# [ -e thirdparty ] || fatal "thirdparty directory or symlink required."
-# export PATH=$PWD/psubmit.bin:$PATH
-# export LD_LIBRARY_PATH=$PWD/thirdparty/yaml-cpp.bin/lib:$PWD/thirdparty/argsparser.bin:$LD_LIBRARY_PATH
-# [ -x ./massivetest ] || fatal "massivetest executable is required."
-# [ -e ./params.inc ] || fatal "params.inc executable is required."
-# [ -e ./modeset.inc ] || fatal "modeset.inc executable is required."
+init_env
 
 source ./params.inc
 source ./modeset.inc
@@ -39,25 +28,28 @@ source ./modeset.inc
 check_bash_func_declared set_specific_params
 
 if [ ! -d base ]; then
-    MASSIVE_TESTS_WORKLOADS="$WORKLOADS_BASE"
-    MASSIVE_TESTS_PARAMS="$PARAM_BASE"
+    MASSIVE_TESTS_SECTIONS="$SECTIONS_BASE"
+    MASSIVE_TESTS_PARAMETERS="$PARAMETERS_BASE"
     MASSIVE_TESTS_EXEC_REPEATS=$MASSIVE_TESTS_EXEC_REPEATS_BASE
     set_specific_params "base" "base"
     massivetest-run
-    move_results base
+    move_results "base"
 fi
 
-export MASSIVE_TESTS_WORKLOADS="$WORKLOADS_COMPETING"
-MASSIVE_TESTS_PARAMS="$PARAM_COMPETING"
+KEYWORDS="*:*:Benchmark:Parameter"
+SIZEKEYWORD="Length"
+
+MASSIVE_TESTS_SECTIONS="$SECTIONS_COMPETING"
+MASSIVE_TESTS_PARAMETERS="$PARAMETERS_COMPETING"
 MASSIVE_TESTS_EXEC_REPEATS=$MASSIVE_TESTS_EXEC_REPEATS_COMPETING
-PAIRS_TO_COMPARE=$(zip "$WORKLOADS_BASE" "$WORKLOADS_COMPETING" " ")
+PAIRS_TO_COMPARE=$(zip "$SECTIONS_BASE" "$SECTIONS_COMPETING" " " ";")
 for mode in $MODES; do
     for submode in $SUBMODES; do
         COMPETING=competing.${mode}_${submode}
         set_specific_params "$mode" "$submode"
         massivetest-run
         move_results "$COMPETING"
-        ./compare.sh "base" "$COMPETING" "$PAIRS_TO_COMPARE" > "out.$COMPETING" && true
+        ./compare.sh "base" "$COMPETING" "$PAIRS_TO_COMPARE" "$KEYWORDS" "$SIZEKEYWORD" > "out.$COMPETING" && true
         if [ "$?" != "0" ]; then
             tail -n1 "out.$COMPETING"
             fatal "./compare.sh failed."
@@ -66,8 +58,8 @@ for mode in $MODES; do
     NN=$(nelems "$MASSIVE_TESTS_NODES")
     NS=$(nelems "$MASSIVE_TESTS_SIZES")
     STEP=$(expr "$NN" \* "$NS" \+ 3)
-    ./script-postproc.sh competing.$mode "$STEP" "$MASSIVE_TESTS_WORKLOADS"
+    ./script-postproc.sh competing.$mode "$STEP" "$MASSIVE_TESTS_SECTIONS"
 done
 
-./make_table.sh "$MASSIVE_TESTS_WORKLOADS"
+./make_table.sh "$MASSIVE_TESTS_SECTIONS"
 

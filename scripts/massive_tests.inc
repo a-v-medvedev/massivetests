@@ -55,7 +55,7 @@ function elem() {
     local delim=$3
     set -u
     [ -z "$delim" ] && delim=" "
-    echo $1 | awk -F "$3" "{print \$$n}"
+    echo $1 | awk -F "$delim" "{print \$$n}"
 }
 
 function zip() {
@@ -63,8 +63,10 @@ function zip() {
     local n=0
     set +u
     local delim="$3"
+    local delim_local="$4"
     set -u
     [ -z "$delim" ] && delim=","
+    [ -z "$delim_local" ] && delim_local=":"
     local ne=$(nelems "$2")
     if [ "$ne" == 1 ]; then
         zip1 "$1" "$2"
@@ -73,7 +75,7 @@ function zip() {
     for i in $1; do
         n=$(expr $n \+ 1)
         j=$(echo $2 | awk "{print \$$n}")
-        result="${result}${delim}${i}:$j"
+        result="${result}${delim}${i}${delim_local}$j"
     done
     echo $result | sed "s/^${delim}//"
 }
@@ -90,20 +92,20 @@ function move_results() {
 function massivetest-run() {
     local NPPNS=$(zip "$MASSIVE_TESTS_NODES" "$MASSIVE_TESTS_PPNS")
     local SIZES=$(zip "$MASSIVE_TESTS_SIZES" "$MASSIVE_TESTS_REPEATS")
-    local WORKLOADS=$(zip "$MASSIVE_TESTS_WORKLOADS" "$MASSIVE_TESTS_PARAMS")
-    ./massivetest --driver="$MASSIVE_TESTS_DRIVER" --scale=${NPPNS} --nqueued=$MASSIVE_TESTS_NQUEUED --sizes=$SIZES --repeats=$MASSIVE_TESTS_EXEC_REPEATS --workloads=$WORKLOADS
+    local WORKLOADS=$(zip "$MASSIVE_TESTS_WORKLOADS" "$MASSIVE_TESTS_MODES")
+    local PARAMS=$(zip "$MASSIVE_TESTS_SECTIONS" "$MASSIVE_TESTS_PARAMETERS")
+    ./massivetest --driver="$MASSIVE_TESTS_DRIVER" --scale=${NPPNS} --nqueued=$MASSIVE_TESTS_NQUEUED --sizes=$SIZES --repeats=$MASSIVE_TESTS_EXEC_REPEATS --workloads=$WORKLOADS --parameters=$PARAMS
 }
 
-[ -f ./env.sh ] && source ./env.sh || fatal "no env.sh file."
-env_init_global
+function init_env()  {
+    [ -f ./env.sh ] && source ./env.sh || fatal "no env.sh file."
+    env_init_global
 
-set -eu
-
-[ -e psubmit.bin ] || fatal "psubmit.bin directory or symlink required."
-[ -e thirdparty ] || fatal "thirdparty directory or symlink required."
-export PATH=$PWD/psubmit.bin:$PATH
-export LD_LIBRARY_PATH=$PWD/thirdparty/yaml-cpp.bin/lib:$PWD/thirdparty/argsparser.bin:$LD_LIBRARY_PATH
-[ -x ./massivetest ] || fatal "massivetest executable is required."
-[ -e ./params.inc ] || fatal "params.inc executable is required."
-[ -e ./modeset.inc ] || fatal "modeset.inc executable is required."
-
+    [ -e psubmit.bin ] || fatal "psubmit.bin directory or symlink required."
+    [ -e thirdparty ] || fatal "thirdparty directory or symlink required."
+    export PATH=$PWD/psubmit.bin:$PATH
+    export LD_LIBRARY_PATH=$PWD/thirdparty/yaml-cpp.bin/lib:$PWD/thirdparty/argsparser.bin:$LD_LIBRARY_PATH
+    [ -x ./massivetest ] || fatal "massivetest executable is required."
+    [ -e ./params.inc ] || fatal "params.inc executable is required."
+    [ -e ./modeset.inc ] || fatal "modeset.inc executable is required."
+}
