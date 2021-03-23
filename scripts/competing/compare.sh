@@ -18,11 +18,10 @@
 #
 
 source ../massive_tests.inc
+source ./params.inc
 
-function getvalue() {
-    local line=$1
-    echo "$line" | awk -F '[ :{},]*' '{ for (v=1; v<=NF; v++) { if (flag==1) {flag=0; print $v*1000000} if ($v=="Value") flag=1; } }'
-}
+check_bash_func_declared get_value
+
 
 function getline() {
     local file=$1
@@ -33,9 +32,9 @@ function getline() {
     local size="$6"
     local search="/[ {]n: $n,/ && /[ {]${sizekeyword}: ${size},/"
     for i in 1 2 3 4; do
-        if [ "$key" != "*" ]; then
-            keyword=$(elem $keywords $i :)
-            key=$(elem $key_block $i :)
+        keyword=$(elem "$keywords" "$i" :)
+        if [ "$keyword" != "X" ]; then
+            key=$(elem "$key_block" "$i" :)
             x="/[ {]${keyword}: ${key},/"
             search="${search} && ${x}"
         fi
@@ -55,15 +54,17 @@ SIZEKEYWORD="$5"
 [ ! -f "$SECOND/output.yaml" ] && echo "ERROR: No output.yaml file in SECOND directory ($FIRST)" && exit 1
 
 for b in $PAIRS; do
-    first_key_block=$(elem $b 1 ;)
-    second_key_block=$(elem $b 2 ;)
+    first_key_block=$(elem "$b" 1 ";")
+    second_key_block=$(elem "$b" 2 ";")
     echo $second_key_block ":"
     echo "---"
     for n in $MASSIVE_TESTS_NODES; do
         # FIXME add ppn handling
         for size in $MASSIVE_TESTS_SIZES; do
-            V1=$(getvalue $(getline $FIRST/output.yaml "$KEYWORDS" "$first_key_block" "$SIZEKEYWORD" $n $size)) 
-            V2=$(getvalue $(getline $SECOND/output.yaml "$KEYWORDS" "$second_key_block" "$SIZEKEYWORD" $n $size)) 
+            L1=$(getline $FIRST/output.yaml "$KEYWORDS" "$first_key_block" "$SIZEKEYWORD" "$n" "$size")
+            L2=$(getline $SECOND/output.yaml "$KEYWORDS" "$second_key_block" "$SIZEKEYWORD" "$n" "$size")
+            V1=$(get_value "$L1") 
+            V2=$(get_value "$L2") 
             [ -z "$V1" ] && echo "ERROR: No data for {n=${n},size=${size}} in output.yaml file in FIRST directory ($FIRST)" && exit 1
             [ -z "$V2" ] && echo "ERROR: No data for {n=${n},size=${size}} in output.yaml file in SECOND directory ($SECOND)" && exit 1
             echo $n $size $V1 $V2
