@@ -17,7 +17,7 @@
 #
 #
 
-source ../massive_tests.inc
+source ./massive_tests.inc
 source ./params.inc
 
 check_bash_func_declared get_value

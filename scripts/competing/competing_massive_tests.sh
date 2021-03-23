@@ -17,7 +17,7 @@
 #
 #
 
-source ../massive_tests.inc
+source ./massive_tests.inc
 
 init_env
 
@@ -37,8 +37,6 @@ if [ ! -d base ]; then
     move_results "base"
 fi
 
-#MASSIVE_TESTS_KEYWORDS="*:*:Benchmark:Parameter"
-#MASSIVE_TESTS_SIZEKEYWORD="Length"
 MASSIVE_TESTS_WORKLOADS="$WORKLOADS_COMPETING"
 MASSIVE_TESTS_MODES="$MODES_COMPETING"
 MASSIVE_TESTS_SECTIONS="$SECTIONS_COMPETING"
