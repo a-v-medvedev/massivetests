@@ -27,6 +27,9 @@
 #include <assert.h>
 #include <cmath>
 
+#include <sys/types.h>
+#include <sys/stat.h>
+
 #include "modules/teststub/traits.h"
 #include "modules/teststub/inout.h"
 #include "helpers.h"
@@ -105,7 +108,7 @@ void input_maker::make(std::string &input_yaml, std::string &psubmit_options, st
     input_yaml = "./input_" + workload + ".yaml";
     args = std::string("-load ") + input_yaml;
     args += std::string(" -output ") + "result.%PSUBMIT_JOBID%.yaml";
-    args += std::string(" -mode ") + mode;
+    //args += std::string(" -mode ") + mode;
     if (testitem.timeout) {
         args += std::string(" -timeout ") + std::to_string(testitem.timeout);
     }
@@ -198,6 +201,18 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
 #endif            
             std::cout << "OUTPUT: teststub: warning: can't open input file: " << infile
                       << std::endl;
+            std::string dir = "results." + std::to_string(j);
+            struct stat s;
+            bool ok = false;
+            int r = stat(dir.c_str(), &s);
+            if (!r && ((s.st_mode & S_IFDIR) == S_IFDIR)) {
+                ok = true;
+            }
+            if (!ok) {
+                std::cout << "OUTPUT: teststub: can't open directory: " << dir
+                          << std::endl;
+                return;
+            }
             continue;
         }
 #ifdef DEBUG
