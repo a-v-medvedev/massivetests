@@ -118,7 +118,7 @@ function move_results() {
     rm -rf "$DIR"
     mkdir "$DIR"
     mv results.* "$DIR"
-    mv input*.yaml "$DIR"
+    cp input*.yaml "$DIR"
     mv output_initial.yaml "$DIR"/output.yaml
 }
 
