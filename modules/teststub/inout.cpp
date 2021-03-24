@@ -182,6 +182,18 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
         if (proc->retval) {
             comment = std::string("Non-zero return code: ") + std::to_string(proc->retval);
             status = status_t::N;
+            std::string dir = "results." + std::to_string(j);
+            struct stat s;
+            bool ok = false;
+            int r = stat(dir.c_str(), &s);
+            if (!r && ((s.st_mode & S_IFDIR) == S_IFDIR)) {
+                ok = true;
+            }
+            if (!ok) {
+                std::cout << "OUTPUT: teststub: can't open directory: " << dir
+                          << std::endl;
+                return;
+            }
             break;
         }
         std::string infile =
@@ -202,18 +214,6 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
 #endif            
             std::cout << "OUTPUT: teststub: warning: can't open input file: " << infile
                       << std::endl;
-            std::string dir = "results." + std::to_string(j);
-            struct stat s;
-            bool ok = false;
-            int r = stat(dir.c_str(), &s);
-            if (!r && ((s.st_mode & S_IFDIR) == S_IFDIR)) {
-                ok = true;
-            }
-            if (!ok) {
-                std::cout << "OUTPUT: teststub: can't open directory: " << dir
-                          << std::endl;
-                return;
-            }
             continue;
         }
 #ifdef DEBUG
