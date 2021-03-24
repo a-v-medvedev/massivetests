@@ -60,8 +60,8 @@ for mode in $MODES; do
     NN=$(nelems "$MASSIVE_TESTS_NODES")
     NS=$(nelems "$MASSIVE_TESTS_SIZES")
     STEP=$(expr "$NN" \* "$NS" \+ 3)
-    ./script-postproc.sh competing.$mode "$STEP" "$MASSIVE_TESTS_SECTIONS"
+    ./script-postproc.sh competing.$mode "$STEP" "$TUPLE_COMPETING"
 done
 
-./make_table.sh "$MASSIVE_TESTS_SECTIONS"
+./make_table.sh "$TUPLE_COMPETING"
 

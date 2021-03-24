@@ -30,12 +30,12 @@ function getline() {
 	local sizekeyword="$4"
     local n="$5"
     local size="$6"
-    local search="/[ {]n: $n,/ && /[ {]${sizekeyword}: ${size},/"
+    local search="/[ {]n: $n,/ && /[ {]${sizekeyword}: [\"]*${size}[\"]*,/"
     for i in 1 2 3 4; do
         keyword=$(elem "$keywords" "$i" :)
         if [ "$keyword" != "X" ]; then
             key=$(elem "$key_block" "$i" :)
-            x="/[ {]${keyword}: ${key},/"
+            x="/[ {]${keyword}: [\"]*${key}[\"]*,/"
             search="${search} && ${x}"
         fi
     done
