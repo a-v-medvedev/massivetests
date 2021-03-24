@@ -104,7 +104,7 @@ void input_maker::make(std::string &input_yaml, std::string &psubmit_options, st
     }
 	const auto &workload = scope.workload_conf.first;
 	const auto &mode = scope.workload_conf.second;
-    psubmit_options = "./psubmit_" + mode + ".opt";
+    psubmit_options = "./psubmit_" /*+ mode*/ + ".opt";
     input_yaml = "./input_" + workload + ".yaml";
     args = std::string("-load ") + input_yaml;
     args += std::string(" -output ") + "result.%PSUBMIT_JOBID%.yaml";
