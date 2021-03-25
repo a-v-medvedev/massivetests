@@ -103,13 +103,13 @@ void input_maker::make(std::string &input_yaml, std::string &psubmit_options, st
         return;
     }
 	const auto &workload = scope.workload_conf.first;
-	const auto &mode = scope.workload_conf.second;
+	const auto &conf = scope.workload_conf.second;
 //    psubmit_options = "./psubmit_" /*+ mode*/ + ".opt";
     psubmit_options = "./psubmit.opt";
     input_yaml = "./input_" + workload + ".yaml";
     args = std::string("-load ") + input_yaml;
     args += std::string(" -output ") + "result.%PSUBMIT_JOBID%.yaml";
-    //args += std::string(" -mode ") + mode;
+    //args += std::string(" -conf ") + conf;
     if (testitem.timeout) {
         args += std::string(" -timeout ") + std::to_string(testitem.timeout);
     }
