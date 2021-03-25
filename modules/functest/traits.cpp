@@ -30,11 +30,11 @@
 #include "argsparser.h"
 #include "helpers.h"
 #include "scope.h"
-#include "modules/teststub/traits.h"
-#include "modules/teststub/inout.h"
+#include "modules/functest/traits.h"
+#include "modules/functest/inout.h"
 #include "results.h"
 
-namespace teststub {
+namespace functest {
 
 std::vector<traits::workload_conf_t> parse_and_make_workload_confs(const args_parser &parser,
 														   const std::string &name) {
@@ -61,7 +61,7 @@ traits::make_scope(const traits::workload_conf_t &workload_conf,
                    const std::vector<traits::parallel_conf_t> &parallel_confs,
                    const std::vector<traits::target_parameter_t> &target_parameters,
                    const std::vector<traits::workload_size_t> workload_sizes) {
-    return std::make_shared<test_scope<teststub::traits>>(workload_conf, 
+    return std::make_shared<test_scope<functest::traits>>(workload_conf, 
                                                           parallel_confs, 
                                                           target_parameters,
                                                           workload_sizes);
@@ -97,5 +97,5 @@ std::shared_ptr<result_t> traits::make_result(const workload_conf_t &wc,
     return std::make_shared<result<traits>>(wc, pc, tp, ws, value, comment);
 }
 
-} // namespace teststub
+} // namespace functest
 

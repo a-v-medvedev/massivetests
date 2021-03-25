@@ -41,24 +41,24 @@ export MASSIVE_TESTS_REPEATS="3"
 
 
 # Workloads, sections and params:
-WORKLOADS_BASE="xxx yyy"
-CONFS_BASE="X"
-SECTIONS_BASE="sec1" 
-PARAMETERS_BASE="p1"
+WORKLOADS_BASE="pjacobi"
+CONFS_BASE="NV1 NV2 NV4 NV8"
+SECTIONS_BASE="X" 
+PARAMETERS_BASE="X"
 
-WORKLOADS_COMPETING="xxx yyy"
-CONFS_COMPETING="X"
-SECTIONS_COMPETING="sec1" 
-PARAMETERS_COMPETING="p1"
+WORKLOADS_COMPETING="pjacobi"
+CONFS_COMPETING="NV1 NV2 NV4 NV8"
+SECTIONS_COMPETING="X" 
+PARAMETERS_COMPETING="X"
 
 
 # Modes and submodes:
-MODES="T A C E"
-SUBMODES="always never"
+MODES="1:1 2:1 4:1 1:4 2:2"
+SUBMODES="spmv solve"
 
 
 # Output file structure:
-export MASSIVE_TESTS_KEYWORDS="Workload:X:X:X"
+export MASSIVE_TESTS_KEYWORDS="Workload:Mode:X:X"
 export MASSIVE_TESTS_SIZEKEYWORD="Matrix"
 
 function get_value() {

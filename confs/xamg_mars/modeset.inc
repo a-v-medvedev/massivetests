@@ -25,13 +25,14 @@ function set_specific_params() {
         fatal "MASSIVE_TESTS_DRIVER must be functest."
     fi
     case "$SUBMODE" in
-        base)
+        solve)
+            export MASSIVETEST_AUX_ARGS="-mode solve"
             ;;
-        always)
-            export MASSIVETEST_AUX_ARGS="-mode always"
+        spmv)
+            export MASSIVETEST_AUX_ARGS="-mode spmv"
             ;;
-        never)
-            export MASSIVETEST_AUX_ARGS="-mode never"
+        hypre)
+            export MASSIVETEST_AUX_ARGS="-mode hypre"
             ;;
 
         *) fatal "Unknown submode: $SUBMODE"
@@ -41,17 +42,23 @@ function set_specific_params() {
     case "$MODE" in
           base)
               ;;
-          T)
-              export MASSIVETEST_AUX_ARGS="$MASSIVETEST_AUX_ARGS -code T"
+              1:1)
+              export MASSIVETEST_AUX_ARGS="$MASSIVETEST_AUX_ARGS -node_config nnodes=1:ncores=1"
               ;;
-          A)
-              export MASSIVETEST_AUX_ARGS="$MASSIVETEST_AUX_ARGS -code A"
+              1:2)
+              export MASSIVETEST_AUX_ARGS="$MASSIVETEST_AUX_ARGS -node_config nnodes=1:ncores=2"
               ;;
-          C)
-              export MASSIVETEST_AUX_ARGS="$MASSIVETEST_AUX_ARGS -code C"
+              1:4)
+              export MASSIVETEST_AUX_ARGS="$MASSIVETEST_AUX_ARGS -node_config nnodes=1:ncores=4"
               ;;
-          E)
-              export MASSIVETEST_AUX_ARGS="$MASSIVETEST_AUX_ARGS -code E"
+              2:1)
+              export MASSIVETEST_AUX_ARGS="$MASSIVETEST_AUX_ARGS -node_config nnodes=2:ncores=1"
+              ;;
+              2:2)
+              export MASSIVETEST_AUX_ARGS="$MASSIVETEST_AUX_ARGS -node_config nnodes=2:ncores=2"
+              ;;
+              4:1)
+              export MASSIVETEST_AUX_ARGS="$MASSIVETEST_AUX_ARGS -node_config nnodes=4:ncores=1"
               ;;
           *) fatal "Unknown mode: $MODE"
              ;;

@@ -30,8 +30,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "modules/teststub/traits.h"
-#include "modules/teststub/inout.h"
+#include "modules/functest/traits.h"
+#include "modules/functest/inout.h"
 #include "helpers.h"
 #include "results.h"
 
@@ -48,7 +48,7 @@
 #endif
 
 
-namespace teststub {
+namespace functest {
 
 enum status_t { P=0, F=1, N=2, S=3, T=4, A=5, C=6, E=7 };
 
@@ -67,7 +67,7 @@ static const std::string status_to_string(status_t st) {
     return "?";
 }
 
-input_maker::input_maker(test_scope<teststub::traits> &_scope)
+input_maker::input_maker(test_scope<functest::traits> &_scope)
     : was_written(false), scope(_scope) {
     assert(scope.workload_sizes.size() == 1);
     const auto workload_conf = scope.workload_conf;
@@ -104,8 +104,11 @@ void input_maker::make(std::string &input_yaml, std::string &psubmit_options, st
     }
 	const auto &workload = scope.workload_conf.first;
 	const auto &conf = scope.workload_conf.second;
-//    psubmit_options = "./psubmit_" /*+ mode*/ + ".opt";
-    psubmit_options = "./psubmit.opt";
+    if (conf == "X") {
+        psubmit_options = "./psubmit.opt";
+    } else {
+        psubmit_options = "./psubmit_" + conf + ".opt";
+    }
     input_yaml = "./input_" + workload + ".yaml";
     args = std::string("-load ") + input_yaml;
     args += std::string(" -output ") + "result.%PSUBMIT_JOBID%.yaml";
@@ -121,7 +124,7 @@ void input_maker::make(std::string &input_yaml, std::string &psubmit_options, st
     write_out(input_yaml);
 }
 
-output_maker::output_maker(test_scope<teststub::traits> &_scope, const std::string &_outfile)
+output_maker::output_maker(test_scope<functest::traits> &_scope, const std::string &_outfile)
     : scope(_scope), outfile(_outfile) {
     out << YAML::BeginSeq;
     out << YAML::Flow;
@@ -157,7 +160,7 @@ status_t check_if_failed(const std::string &s, const std::string &jid) {
 }
 
 void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
-    teststub::traits traits;
+    functest::traits traits;
     int n = -1, ppn = -1;
 	const auto wconf = scope.workload_conf;
 	const auto size = scope.workload_sizes[0];
@@ -190,7 +193,7 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
                 ok = true;
             }
             if (!ok) {
-                std::cout << "OUTPUT: teststub: can't open directory: " << dir
+                std::cout << "OUTPUT: functest: can't open directory: " << dir
                           << std::endl;
                 return;
             }
@@ -208,16 +211,16 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
         if (!helpers::try_to_open_file<NATTEMPTS, SLEEPTIME>(in, infile)) {
 #if MISSING_FILES_FATAL            
             // NOTE: commented out this return: let us handle missing input files as a non-fatal case
-            std::cout << "OUTPUT: teststub: stop processing: can't open input file: " << infile
+            std::cout << "OUTPUT: functest: stop processing: can't open input file: " << infile
                       << std::endl; 
             return;
 #endif            
-            std::cout << "OUTPUT: teststub: warning: can't open input file: " << infile
+            std::cout << "OUTPUT: functest: warning: can't open input file: " << infile
                       << std::endl;
             continue;
         }
 #ifdef DEBUG
-        std::cout << ">> teststub: input: reading " << infile << std::endl;
+        std::cout << ">> functest: input: reading " << infile << std::endl;
 #endif
         auto stream = YAML::Load(in);
         for (auto &sp : scope.target_parameters) {
@@ -250,13 +253,13 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
             auto parameter = sp[1];
             auto &vals = it.second;
 #ifdef DEBUG
-            std::cout << ">> teststub: output: section=" << section << " parameter=" << parameter
+            std::cout << ">> functest: output: section=" << section << " parameter=" << parameter
                       << std::endl;
 #endif
             auto &v = vals[size];
             if (v.size() == 0) {
 #ifdef DEBUG
-                std::cout << ">> teststub: output: nothing found for section/parameter: " << it.first
+                std::cout << ">> functest: output: nothing found for section/parameter: " << it.first
                           << std::endl;
 #endif
                 comment = std::string("No data for par=") + it.first;
@@ -270,7 +273,7 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
                 sort(v.begin(), v.end());
                 if (v.front() != v.back()) {
 #ifdef DEBUG
-                    std::cout << ">> teststub: v.front() != v.back(). ATTEMPTS COMPARISON FAILED!" << std::endl;
+                    std::cout << ">> functest: v.front() != v.back(). ATTEMPTS COMPARISON FAILED!" << std::endl;
 #endif
                     comment = std::string("Attempts comparison failed par=") + it.first + std::string(" diff=") + std::to_string(fabs(v.front() - v.back())); 
                     status = status_t::F;
@@ -281,7 +284,7 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
             double diff = fabs(result_val - testitem.base[section + "/" + parameter]);
             if (diff > 1e-6) {
 #ifdef DEBUG
-                std::cout << ">> teststub: diff > 1e-6. GOLD VALUE COMPARISON FAILED!" << std::endl;
+                std::cout << ">> functest: diff > 1e-6. GOLD VALUE COMPARISON FAILED!" << std::endl;
 #endif
                 comment = std::string("Gold value comparison failed par=") + it.first + std::string(" diff=") + std::to_string(diff); 
                 status = status_t::F;
@@ -292,9 +295,9 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
     auto r = traits.make_result(wconf, {n, ppn}, {"", ""}, size, status_to_string(status), comment);
     r->to_yaml(out);
     nresults++;
-    std::cout << "OUTPUT: teststub: {" << wconf.first << "," << wconf.second << "}"
+    std::cout << "OUTPUT: functest: {" << wconf.first << "," << wconf.second << "}"
               << " on parallel conf: {" << n << "," << ppn << "} " << nresults
               << " resulting items registered" << std::endl;
 }
 
-} // namespace teststub
+} // namespace functest

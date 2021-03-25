@@ -29,7 +29,7 @@
 
 class result_t;
 
-namespace teststub {
+namespace functest {
 
 struct traits {
     using workload_conf_t = std::pair<std::string, std::string>;
@@ -114,6 +114,6 @@ struct traits {
     }
 };
 
-} // namespace teststub
+} // namespace functest
 
 

@@ -22,11 +22,11 @@
 #include <memory>
 #include <fstream>
 
-#include "modules/teststub/traits.h"
+#include "modules/functest/traits.h"
 #include "scope.h"
 #include "process.h"
 
-namespace teststub {
+namespace functest {
 
 struct test_item_t {
     std::string name;
@@ -73,4 +73,4 @@ struct output_maker : public output_maker_base {
     virtual void make(std::vector<std::shared_ptr<process>> &attempts);
 };
 
-} // namespace teststub
+} // namespace functest
