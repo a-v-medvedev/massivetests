@@ -42,12 +42,12 @@ export MASSIVE_TESTS_REPEATS="1000 1000 500 50 10"
 
 # Workloads, sections and params:
 WORKLOADS_BASE="X"
-MODES_BASE="X"
+CONFS_BASE="X"
 SECTIONS_BASE="sync_pt2pt sync_allreduce sync_na2a" # sync_rma_pt2pt"
 PARAMETERS_BASE="tavg"
 
 WORKLOADS_COMPETING="X"
-MODES_COMPETING="X"
+CONFS_COMPETING="X"
 SECTIONS_COMPETING="async_pt2pt async_allreduce async_na2a" # async_rma_pt2pt"
 PARAMETERS_COMPETING="over_full"
 
