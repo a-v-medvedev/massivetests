@@ -18,7 +18,7 @@
 #
 
 export MASSIVE_TESTS_DRIVER="imb_async"
-
+export MASSIVE_TESTS_APPLICATION="imb_async"
 
 # Number of sumultaineously queued:
 export MASSIVE_TESTS_NQUEUED=1

@@ -18,6 +18,7 @@
 #
 
 export MASSIVE_TESTS_DRIVER="functest"
+export MASSIVE_TESTS_APPLICATION="xamg"
 
 
 # Number of sumultaineously queued:

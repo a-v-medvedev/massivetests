@@ -18,6 +18,7 @@
 #
 
 export MASSIVE_TESTS_DRIVER="functest"
+export MASSIVE_TESTS_APPLICATION="teststub"
 
 
 # Number of sumultaineously queued:
