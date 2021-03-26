@@ -100,7 +100,13 @@ int main(int argc, char **argv) {
         return 1;
     int nqueued = parser.get<int>("nqueued");
     int repeats = parser.get<int>("repeats");
-    auto driver = parser.get<std::string>("driver");    
+    auto driver = parser.get<std::string>("driver");
+    if (driver.find("/") != std::string::npos) {
+        auto da_pair = helpers::str_split(driver, '/');
+        assert(da_pair.size() == 2);
+        driver = da_pair[0];
+        MODULE::traits::application = da_pair[1];
+    }
     if (driver == MODULESTR) {
         parse_and_start<MODULE::traits>(parser, nqueued, repeats);
     } else {

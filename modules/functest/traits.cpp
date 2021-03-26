@@ -32,6 +32,8 @@
 #include "scope.h"
 #include "modules/functest/traits.h"
 #include "modules/functest/inout.h"
+#include "modules/functest/inout_teststub.h"
+#include "modules/functest/inout_xamg.h"
 #include "results.h"
 
 namespace functest {
@@ -80,12 +82,24 @@ traits::make_scopes(const std::vector<traits::workload_conf_t> &workload_confs,
 }
 
 std::shared_ptr<input_maker_base> traits::make_input_maker(test_scope<traits> &scope) {
-    return std::make_shared<input_maker>(scope);
+    if (application == "testub") {
+        return std::make_shared<input_maker_teststub>(scope);
+    } else if (application == "xamg") {
+        return std::make_shared<input_maker_xamg>(scope);
+    } else {
+        return nullptr;
+    }
 }
 
 std::shared_ptr<output_maker_base> traits::make_output_maker(test_scope<traits> &scope,
                                                              const std::string &outfile) {
-    return std::make_shared<output_maker>(scope, outfile);
+    if (application == "testub") {
+        return std::make_shared<output_maker_teststub>(scope, outfile);
+    } else if (application == "xamg") {
+        return std::make_shared<output_maker_xamg>(scope, outfile);
+    } else {
+        return nullptr;
+    }
 }
 
 std::shared_ptr<result_t> traits::make_result(const workload_conf_t &wc, 
@@ -96,6 +110,8 @@ std::shared_ptr<result_t> traits::make_result(const workload_conf_t &wc,
                                               const std::string &comment) {
     return std::make_shared<result<traits>>(wc, pc, tp, ws, value, comment);
 }
+
+std::string traits::application;
 
 } // namespace functest
 

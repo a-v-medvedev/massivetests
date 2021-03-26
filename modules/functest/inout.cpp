@@ -32,6 +32,9 @@
 
 #include "modules/functest/traits.h"
 #include "modules/functest/inout.h"
+#include "modules/functest/inout_teststub.h"
+#include "modules/functest/inout_xamg.h"
+
 #include "helpers.h"
 #include "results.h"
 
@@ -68,17 +71,24 @@ static const std::string status_to_string(status_t st) {
 }
 
 input_maker::input_maker(test_scope<functest::traits> &_scope)
-    : was_written(false), scope(_scope) {
+    : scope(_scope) {
     assert(scope.workload_sizes.size() == 1);
     const auto workload_conf = scope.workload_conf;
-	testitem.load(workload_conf.first + "/" + scope.workload_sizes[0].first);
+    std::string item;
+    if (workload_conf.second == "X") {
+        item = workload_conf.first + "/" + scope.workload_sizes[0].first;
+    } else {
+        item = workload_conf.first + "/" + workload_conf.second + "/" + scope.workload_sizes[0].first;
+    }
+	testitem.load(item);
 }
 
+/*
 void input_maker::write_out(const std::string &input_file_name) {
     (void)input_file_name;
     if (was_written)
         return;
-/*    
+   
     std::ofstream ofs(input_file_name);
     YAML::Emitter out;
     out << YAML::BeginDoc;
@@ -91,9 +101,10 @@ void input_maker::write_out(const std::string &input_file_name) {
     out << YAML::EndMap;
     out << YAML::EndDoc;
     ofs << out.c_str();
-*/    
+    
     was_written = true;
 }
+*/
 
 void input_maker::make(std::string &input_yaml, std::string &psubmit_options, std::string &args) {
 	assert(scope.workload_sizes.size() == 1);
@@ -121,7 +132,6 @@ void input_maker::make(std::string &input_yaml, std::string &psubmit_options, st
     if ((aux_opts = getenv("MASSIVETEST_AUX_ARGS"))) {
         args += " " + std::string(aux_opts);
     }
-    write_out(input_yaml);
 }
 
 output_maker::output_maker(test_scope<functest::traits> &_scope, const std::string &_outfile)
@@ -231,10 +241,32 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
             if (!stream[section])
                 continue;
             const auto &sec = stream[section].as<YAML::Node>();
-            if (!sec[parameter])
-                continue;
-            const auto &p = sec[parameter].as<YAML::Node>();
-            vals[size].push_back(p.as<val_t>());
+            if (parameter.find("[") != std::string::npos && 
+                parameter.find("]") != std::string::npos) {
+                auto pv = helpers::str_split(parameter, '[');
+                assert(pv.size() == 2);
+                auto idxv = helpers::str_split(pv[1], ']');
+                assert(idxv.size() == 2);
+                assert(idxv[1] == "");
+                auto p = pv[0];
+                auto idx = idxv[0];
+                size_t i = std::stol(idx);
+                if (!sec[p])
+                    continue;
+                const auto &pn = sec[p].as<YAML::Node>();
+                size_t n = 0;
+                for (YAML::const_iterator it = pn.begin(); it != pn.end(); ++it) {
+                    if (i == n++) {
+                        vals[size].push_back(it->as<val_t>());
+                        break;
+                    }
+                }
+            } else {
+                if (!sec[parameter])
+                    continue;
+                const auto &p = sec[parameter].as<YAML::Node>();
+                vals[size].push_back(p.as<val_t>());
+            }
         }
     }
     // NOTE: commented out this assert: lets handle missing input files as non-fatal case

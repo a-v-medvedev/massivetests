@@ -56,10 +56,8 @@ struct test_item_t {
 
 struct input_maker : public input_maker_base {
     test_item_t testitem;
-    bool was_written;
     test_scope<traits> &scope;
     input_maker(test_scope<traits> &_scope);
-    void write_out(const std::string &input_file_name);
     virtual void make(std::string &input_yaml, std::string &psubmit_options, std::string &args);
 };
 

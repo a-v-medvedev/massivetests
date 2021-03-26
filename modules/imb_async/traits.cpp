@@ -96,5 +96,7 @@ std::shared_ptr<result_t> traits::make_result(const workload_conf_t &wc,
     return std::make_shared<result<traits>>(wc, pc, tp, ws, value, comment);
 }
 
+std::string traits::application;
+
 } // namespace imb_async
 
