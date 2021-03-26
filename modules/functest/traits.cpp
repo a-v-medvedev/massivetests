@@ -82,7 +82,7 @@ traits::make_scopes(const std::vector<traits::workload_conf_t> &workload_confs,
 }
 
 std::shared_ptr<input_maker_base> traits::make_input_maker(test_scope<traits> &scope) {
-    if (application == "testub") {
+    if (application == "teststub") {
         return std::make_shared<input_maker_teststub>(scope);
     } else if (application == "xamg") {
         return std::make_shared<input_maker_xamg>(scope);
@@ -93,7 +93,7 @@ std::shared_ptr<input_maker_base> traits::make_input_maker(test_scope<traits> &s
 
 std::shared_ptr<output_maker_base> traits::make_output_maker(test_scope<traits> &scope,
                                                              const std::string &outfile) {
-    if (application == "testub") {
+    if (application == "teststub") {
         return std::make_shared<output_maker_teststub>(scope, outfile);
     } else if (application == "xamg") {
         return std::make_shared<output_maker_xamg>(scope, outfile);
