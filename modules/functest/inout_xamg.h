@@ -23,6 +23,9 @@ struct input_maker_xamg : public input_maker {
     }
     virtual void make(std::string &input_yaml, std::string &psubmit_options, std::string &args) override {
         input_maker::make(input_yaml, psubmit_options, args);
+        if (testitem.skip) {
+            return;
+        }
         auto matrix_name = scope.workload_sizes[0].first;
         assert(matrix_name.size() != 0);
         if (matrix_name[0] == '@') {
