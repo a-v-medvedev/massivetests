@@ -25,6 +25,8 @@ function set_specific_params() {
         fatal "MASSIVE_TESTS_DRIVER must be functest."
     fi
     case "$SUBMODE" in
+        base)
+            ;;
         solve)
             export MASSIVETEST_AUX_ARGS="-mode solve"
             ;;
