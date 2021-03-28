@@ -31,8 +31,8 @@ struct input_maker_xamg : public input_maker {
         if (matrix_name[0] == '@') {
             auto dim = helpers::str_split(matrix_name.substr(1), 'x');
             args += std::string(" -matrix generate");
-            args += std::string("-generator_params "); 
-            args += std::string("case=cube:");
+            args += std::string(" -generator_params"); 
+            args += std::string(" case=cube:");
             args += std::string("nx=") + dim[0] + ":" + std::string("ny=") + dim[1] + ":" +
                     std::string("nz=") + dim[2];
         } else {
