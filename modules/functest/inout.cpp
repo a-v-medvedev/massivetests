@@ -121,10 +121,12 @@ void input_maker::make(std::string &input_yaml, std::string &psubmit_options, st
         psubmit_options = "./psubmit_" + conf + ".opt";
     }
     input_yaml = "./input_" + workload + ".yaml";
-    args = std::string("-load ") + input_yaml;
-    args += std::string(" -output ") + "result.%PSUBMIT_JOBID%.yaml";
-    //args += std::string(" -conf ") + conf;
-    if (testitem.timeout) {
+    args = load_key + " " + input_yaml;
+    args += std::string(" ") + result_key + "result.%PSUBMIT_JOBID%.yaml";
+    if (conf_key != "") {
+        args += std::string(" ") + conf_key + " " + conf;
+    }
+    if (timeout_key != "" && testitem.timeout) {
         args += std::string(" -timeout ") + std::to_string(testitem.timeout);
     }
 
