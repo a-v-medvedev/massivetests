@@ -55,7 +55,7 @@ struct test_item_t {
 };
 
 struct input_maker : public input_maker_base {
-    std::string load_key = "=load";
+    std::string load_key = "-load";
     std::string result_key = "-result";
     std::string conf_key = "";
     std::string timeout_key = "-timeout";
