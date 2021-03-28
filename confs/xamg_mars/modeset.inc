@@ -28,7 +28,7 @@ function set_specific_params() {
         base)
             ;;
         solve)
-            export MASSIVETEST_AUX_ARGS="-mode solve"
+            export MASSIVETEST_AUX_ARGS="-mode solver"
             ;;
         spmv)
             export MASSIVETEST_AUX_ARGS="-mode spmv"
