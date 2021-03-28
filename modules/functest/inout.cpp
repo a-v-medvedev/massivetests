@@ -142,7 +142,13 @@ output_maker::output_maker(test_scope<functest::traits> &_scope, const std::stri
     out << YAML::Flow;
     assert(scope.workload_sizes.size() == 1);
     const auto workload_conf = scope.workload_conf;
-    testitem.load(workload_conf.first + "/" + scope.workload_sizes[0].first);
+    std::string item;
+    if (workload_conf.second == "X") {
+        item = workload_conf.first + "/" + scope.workload_sizes[0].first;
+    } else {
+        item = workload_conf.first + "/" + workload_conf.second + "/" + scope.workload_sizes[0].first;
+    }
+    testitem.load(item);
 }
 
 output_maker::~output_maker() {
