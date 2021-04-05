@@ -33,7 +33,7 @@ struct process {
     using parallel_size_t = std::pair<int, int>;
     int n, ppn;
     pid_t pid = 0;
-    int jobid = 0;
+    int jobid = -1;
     int retval = 0;
     bool skipped = false;
     std::string state = "NONE";
@@ -41,6 +41,7 @@ struct process {
     FILE *outfp = nullptr;
     std::shared_ptr<input_maker_base> im;
     std::shared_ptr<output_maker_base> om;
+    std::string full_output;
 
     process(parallel_size_t s, std::shared_ptr<input_maker_base> _input_maker,
             std::shared_ptr<output_maker_base> _output_maker)
@@ -100,6 +101,7 @@ struct process {
             this->wait();
             return true;
         }
+        full_output += s;
 #ifdef DEBUG
         std::cout << pid << ": " << s; // no endline, it is already there
 #endif

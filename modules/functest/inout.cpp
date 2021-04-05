@@ -189,6 +189,11 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
     std::string comment;
     for (auto &proc : attempts) {
         int j = proc->jobid;
+        if (j == -1) {
+            std::cout << "OUTPUT: FATAL: failure in submitting job via psubmit. Output:\n-----" << std::endl;
+            std::cout << proc->full_output << std::endl;
+            return;
+        }
         if (n == -1)
             n = proc->n;
         if (ppn == -1)
@@ -241,7 +246,8 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
         std::cout << ">> functest: input: reading " << infile << std::endl;
 #endif
         auto stream = YAML::Load(in);
-        for (auto &sp : scope.target_parameters) {
+        auto tps = testitem.update_target_parameters(scope.target_parameters);
+        for (auto &sp : tps) {
             std::string &section = sp.first;
             std::string &parameter = sp.second;
             auto str_sp = traits.target_parameter_to_string(sp);

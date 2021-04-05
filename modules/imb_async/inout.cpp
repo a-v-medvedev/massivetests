@@ -118,6 +118,11 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
     std::map<std::string, vals_t> values;
     for (auto &proc : attempts) {
         int j = proc->jobid;
+        if (j == -1) {
+            std::cout << "OUTPUT: FATAL: failure in submitting job via psubmit. Output:\n-----" << std::endl;
+            std::cout << proc->full_output << std::endl;
+            return;
+        }
         if (n == -1)
             n = proc->n;
         if (ppn == -1)
