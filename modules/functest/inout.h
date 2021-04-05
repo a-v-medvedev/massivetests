@@ -52,6 +52,29 @@ struct test_item_t {
             base[it->first.as<std::string>()] = it->second.as<double>();
         }
     }
+    using target_parameter_vector_t = std::vector<functest::traits::target_parameter_t>;
+    target_parameter_vector_t
+    update_target_parameters(const target_parameter_vector_t &given) {
+        if (given.size() != 1)
+            return given;
+        const auto &sp = given[0];
+        auto section = sp.first;
+        auto parameter = sp.second;
+        if (section != "ALL" && parameter != "ALL")
+            return given;
+        target_parameter_vector_t result;
+        for (const auto &i : base) {
+            auto v_sp = helpers::str_split(i.first, '/');
+            auto v_section = v_sp[0];
+            auto v_parameter = v_sp[1];
+            if (section != "ALL" && v_section != section)
+                continue;
+            if (parameter != "ALL" && v_parameter != parameter)
+                continue;
+            result.push_back(functest::traits::target_parameter_t { v_section, v_parameter });
+        }
+        return result;
+    }
 };
 
 struct input_maker : public input_maker_base {
