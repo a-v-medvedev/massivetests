@@ -260,10 +260,11 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
                 auto pv = helpers::str_split(parameter, '[');
                 assert(pv.size() == 2);
                 auto idxv = helpers::str_split(pv[1], ']');
-                assert(idxv.size() == 2);
-                assert(idxv[1] == "");
+                //std::cout << ">> OUTPUT: parameter=" << parameter << std::endl;
+                assert(idxv.size() == 1);
                 auto p = pv[0];
                 auto idx = idxv[0];
+                //std::cout << ">> OUTPUT: parameter=" << parameter << " " << p << "," << idx <<  std::endl;
                 size_t i = std::stol(idx);
                 if (!sec[p])
                     continue;
