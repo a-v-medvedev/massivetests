@@ -19,7 +19,6 @@ namespace functest {
 
 struct input_maker_xamg : public input_maker {
     input_maker_xamg(test_scope<traits> &_scope) : input_maker(_scope) { 
-        input_maker::timeout_key = "";
     }
     virtual void make(std::string &input_yaml, std::string &psubmit_options, std::string &args) override {
         input_maker::make(input_yaml, psubmit_options, args);
