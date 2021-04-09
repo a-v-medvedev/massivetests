@@ -39,11 +39,11 @@
 #include "results.h"
 
 #ifndef NATTEMPTS
-#define NATTEMPTS 5   // was: 100 for Lom2
+#define NATTEMPTS 5   // was: 100 for Lom2 FIXME make it an external cmdline param
 #endif
 
 #ifndef SLEEPTIME
-#define SLEEPTIME 10   // was: 100 for Lom2
+#define SLEEPTIME 10   // was: 100 for Lom2  FIXME make it an external cmdline param
 #endif
 
 #ifndef MISSING_FILES_FATAL
@@ -124,10 +124,10 @@ void input_maker::make(std::string &input_yaml, std::string &psubmit_options, st
     args = load_key + " " + input_yaml;
     args += std::string(" ") + result_key + std::string(" ") + " result.%PSUBMIT_JOBID%.yaml";
     if (conf_key != "") {
-        args += std::string(" ") + conf_key + " " + conf;
+        args += std::string(" ") + conf_key + std::string(" ") + conf;
     }
     if (timeout_key != "" && testitem.timeout) {
-        args += std::string(" -timeout ") + std::to_string(testitem.timeout);
+        args += std::string(" ") + timeout_key + std::string(" ") + std::to_string(testitem.timeout);
     }
 
     char *aux_opts;
@@ -260,11 +260,9 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
                 auto pv = helpers::str_split(parameter, '[');
                 assert(pv.size() == 2);
                 auto idxv = helpers::str_split(pv[1], ']');
-                //std::cout << ">> OUTPUT: parameter=" << parameter << std::endl;
                 assert(idxv.size() == 1);
                 auto p = pv[0];
                 auto idx = idxv[0];
-                //std::cout << ">> OUTPUT: parameter=" << parameter << " " << p << "," << idx <<  std::endl;
                 size_t i = std::stol(idx);
                 if (!sec[p])
                     continue;
@@ -329,9 +327,9 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
                 result_val = v[0];
             }
             double diff = fabs(result_val - testitem.base[section + "/" + parameter]);
-            if (diff > 1e-6) {
+            if (diff > 1e-11) { // FIXME make this const a cmdline param
 #ifdef DEBUG
-                std::cout << ">> functest: diff > 1e-6. GOLD VALUE COMPARISON FAILED!" << std::endl;
+                std::cout << ">> functest: diff > 1e-11. GOLD VALUE COMPARISON FAILED!" << std::endl;
 #endif
                 comment = std::string("Gold value comparison failed par=") + it.first + std::string(" diff=") + std::to_string(diff); 
                 status = status_t::F;

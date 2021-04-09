@@ -76,7 +76,9 @@ traits::make_scopes(const std::vector<traits::workload_conf_t> &workload_confs,
                     const std::vector<traits::workload_size_t> workload_sizes) {
     std::vector<std::shared_ptr<test_scope<traits>>> vec;
     for (const auto &w : workload_confs) {
-        vec.push_back(make_scope(w, parallel_confs, target_parameters, workload_sizes));
+        for (const auto &s : workload_sizes) {
+            vec.push_back(make_scope(w, parallel_confs, target_parameters, {s}));
+        }
     }
     return vec;
 }

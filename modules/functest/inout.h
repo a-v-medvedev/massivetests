@@ -32,7 +32,7 @@ struct test_item_t {
     std::string name;
     std::map<std::string, double> base;
     bool skip = false;
-    unsigned timeout = 1000;
+    unsigned timeout = 15;  // FIXME make it a cmdline param
     void load(const std::string &_name) {
         name = _name;
         std::ifstream in;
@@ -43,14 +43,19 @@ struct test_item_t {
             return;
         }
         const auto &item = stream[name].as<YAML::Node>();
-        const auto &opts = item["options"].as<YAML::Node>();
-        skip = opts["skip"].as<bool>();
-        timeout = opts["timeout"].as<unsigned>();
-        
+        if (item["options"]) {
+            const auto &opts = item["options"].as<YAML::Node>();
+            if (opts["skip"]) {
+                skip = opts["skip"].as<bool>();
+            }
+            if (opts["timeout"]) {
+                timeout = opts["timeout"].as<unsigned>();
+            }
+        }
         const auto &vals = item["values"].as<YAML::Node>();
         for (auto it = vals.begin(); it != vals.end(); ++it) {
             base[it->first.as<std::string>()] = it->second.as<double>();
-        }
+        }        
     }
     using target_parameter_vector_t = std::vector<functest::traits::target_parameter_t>;
     target_parameter_vector_t
@@ -90,7 +95,7 @@ struct input_maker : public input_maker_base {
 
 struct output_maker : public output_maker_base {
     test_item_t testitem;
-    test_scope<traits> scope;
+    test_scope<traits> &scope;
     YAML::Emitter out;
     std::string outfile;
     output_maker(test_scope<traits> &_scope, const std::string &_outfile);

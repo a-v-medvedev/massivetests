@@ -46,17 +46,17 @@ struct dispatcher {
     using parallel_conf_t = typename TRAITS::parallel_conf_t;
     std::vector<std::shared_ptr<process>> waiting_processes;
     std::vector<std::shared_ptr<process>> processes;
-    std::map<std::pair<workload_conf_t, parallel_conf_t>, std::vector<std::shared_ptr<process>>> attempts;
+    std::map<std::tuple<int, workload_conf_t, parallel_conf_t>, std::vector<std::shared_ptr<process>>> attempts;
     size_t nattempts;
     size_t nqueued;
     uint64_t oldcs = 0;
     size_t finished = 0, queued = 0, done = 0, error = 0;
     dispatcher(int _nattempts, int _nqueued) : nattempts(_nattempts), nqueued(_nqueued) {}
 
-    void enqueue(workload_conf_t wconf, parallel_conf_t pconf, 
+    void enqueue(int scope_id, workload_conf_t wconf, parallel_conf_t pconf, 
                  std::shared_ptr<input_maker_base> im,
                  std::shared_ptr<output_maker_base> om) {
-        auto conf = std::make_pair(wconf, pconf);
+        auto conf = std::make_tuple(scope_id, wconf, pconf);
         auto &already_submitted = attempts[conf];
         std::shared_ptr<process> proc(std::make_shared<process>(pconf, im, om));
         already_submitted.push_back(proc);
@@ -137,8 +137,11 @@ struct dispatcher {
         if (some_new_finished_processes || all_is_done) {
             for (auto &it : attempts) {
                 auto &procs = it.second;
-                if (procs.size() != nattempts)
+                if (procs.size() < nattempts)
                     continue;
+                if (procs.size() > nattempts) {
+                    assert(0 && "Configuration error: too many processes in a single running group.");
+                }
                 bool all_finished = true;
                 for (auto &proc : procs) {
                     all_finished = all_finished && (proc->state == "FINISHED");
@@ -147,8 +150,8 @@ struct dispatcher {
                     continue;
 #ifdef DEBUG
                 auto &conf = it.first;
-                auto &wconf = conf.first;
-                auto &pconf = conf.second;
+                auto &wconf = std::get<1>(conf);
+                auto &pconf = std::get<2>(conf);
                 std::cout << ">> dispatcher: " << nattempts << " attempts for: {"
                           << wconf.first << "," << wconf.second << "} in parallel conf: {"
                           << pconf.first << "," << pconf.second

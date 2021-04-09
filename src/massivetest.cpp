@@ -55,7 +55,7 @@ void start(const std::vector<std::shared_ptr<test_scope<TRAITS>>> &scopes,
         auto wc = scope.workload_conf;
         for (auto &pc : scope.parallel_confs) {
             for (int i = 0; i < repeats; i++)
-                disp.enqueue(wc, pc, im, om);
+                disp.enqueue(scope.id, wc, pc, im, om);
         }
     }
     while (!disp.check_if_all_finished()) {
