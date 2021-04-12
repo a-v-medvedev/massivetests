@@ -28,12 +28,18 @@ struct input_maker_xamg : public input_maker {
         auto matrix_name = scope.workload_sizes[0].first;
         assert(matrix_name.size() != 0);
         if (matrix_name[0] == '@') {
-            auto dim = helpers::str_split(matrix_name.substr(1), 'x');
-            args += std::string(" -matrix generate");
-            args += std::string(" -generator_params"); 
-            args += std::string(" case=cube:");
-            args += std::string("nx=") + dim[0] + ":" + std::string("ny=") + dim[1] + ":" +
-                    std::string("nz=") + dim[2];
+            if (matrix_name.size() > 2 && matrix_name[1] == '@') {
+                args += std::string(" -generator_params");
+                args += std::string(" vsz=");
+                args += matrix_name.substr(2);
+            } else {
+                auto dim = helpers::str_split(matrix_name.substr(1), 'x');
+                args += std::string(" -matrix generate");
+                args += std::string(" -generator_params"); 
+                args += std::string(" case=cube:");
+                args += std::string("nx=") + dim[0] + ":" + std::string("ny=") + dim[1] + ":" +
+                        std::string("nz=") + dim[2];
+            }
         } else {
             args += std::string(" -matrix ") + matrix_name;
         }
