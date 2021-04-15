@@ -189,10 +189,10 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
     std::string comment;
     for (auto &proc : attempts) {
         int j = proc->jobid;
-        if (j == -1) {
+        if (j == -1 && !proc->skipped) {
             std::cout << "OUTPUT: FATAL: failure in submitting job via psubmit. Output:\n-----" << std::endl;
             std::cout << proc->full_output << std::endl;
-            return;
+            assert(0 && "psubmit starting problem");
         }
         if (n == -1)
             n = proc->n;

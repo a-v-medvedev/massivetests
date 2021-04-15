@@ -88,7 +88,7 @@ struct dispatcher {
             if (check_if_all_finished())
                 break;
             if (queued < 2)
-                usleep(10000);
+                usleep(1000);
         }
         inside = false;
     }

@@ -43,6 +43,7 @@ struct input_maker_xamg : public input_maker {
         } else {
             args += std::string(" -matrix ") + matrix_name;
         }
+        args += std::string(" -logfile logfile.%PSUBMIT_JOBID%.log");
     }
 };
 

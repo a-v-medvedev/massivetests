@@ -59,7 +59,7 @@ void start(const std::vector<std::shared_ptr<test_scope<TRAITS>>> &scopes,
         }
     }
     while (!disp.check_if_all_finished()) {
-        usleep(10000);
+        usleep(1000);
     }
 }
 

@@ -98,6 +98,48 @@ function zip() {
     echo $result | sed "s/^${delim}//"
 }
 
+function comb() {
+    local result=""
+    local n=0
+    set +u
+    local delim="$3"
+    local delim_local="$4"
+    set -u
+    [ -z "$delim" ] && delim=" "
+    [ -z "$delim_local" ] && delim_local=":"
+    local ne_right=$(nelems "$2")
+    if [ "$ne_right" == 1 ]; then
+        zip_X1 "$1" "$2" "$delim" "$delim_local"
+        return
+    fi
+    local ne_left=$(nelems "$1")
+    if [ "$ne_left" == 1 ]; then
+        zip_1X "$1" "$2" "$delim" "$delim_local"
+        return
+    fi
+    for i in $1; do
+        for j in $2; do
+            result="${result}${delim}${i}${delim_local}$j"
+        done
+    done
+    echo $result | sed "s/^${delim}//"
+}
+
+function comb4() {
+    local a1="$1"
+    local a2="$2"
+    local a3="$3"
+    local a4="$4"
+    local delim="$5"
+    local delim_local="$6"
+    [ -z "$delim" ] && delim=" "
+    [ -z "$delim_local" ] && delim_local=":"
+    local Z1=$(zip "$a3" "$a4" "$delim" "$delim_local")
+    local Z2=$(comb "$a2" "$Z1" "$delim" "$delim_local")
+    local Z3=$(comb "$a1" "$Z2" "$delim" "$delim_local")
+    echo "$Z3"
+}
+
 function zip4() {
     local a1="$1"
     local a2="$2"
@@ -125,8 +167,8 @@ function move_results() {
 function massivetest-run() {
     local NPPNS=$(zip "$MASSIVE_TESTS_NODES" "$MASSIVE_TESTS_PPNS" ",")
     local SIZES=$(zip "$MASSIVE_TESTS_SIZES" "$MASSIVE_TESTS_REPEATS" ",")
-    local WORKLOADS=$(zip "$MASSIVE_TESTS_WORKLOADS" "$MASSIVE_TESTS_CONFS" ",")
-    local PARAMS=$(zip "$MASSIVE_TESTS_SECTIONS" "$MASSIVE_TESTS_PARAMETERS" ",")
+    local WORKLOADS=$(comb "$MASSIVE_TESTS_WORKLOADS" "$MASSIVE_TESTS_CONFS" ",")
+    local PARAMS=$(comb "$MASSIVE_TESTS_SECTIONS" "$MASSIVE_TESTS_PARAMETERS" ",")
     ./massivetest --driver="$MASSIVE_TESTS_DRIVER/$MASSIVE_TESTS_APPLICATION" --scale="${NPPNS}" --nqueued="$MASSIVE_TESTS_NQUEUED" --sizes="$SIZES" --repeats="$MASSIVE_TESTS_EXEC_REPEATS" --workloads="$WORKLOADS" --parameters="$PARAMS"
 }
 
