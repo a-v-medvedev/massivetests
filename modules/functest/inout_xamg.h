@@ -32,6 +32,7 @@ struct input_maker_xamg : public input_maker {
                 args += std::string(" -generator_params");
                 args += std::string(" vsz=");
                 args += matrix_name.substr(2);
+                args += std::string(" -matrix ") + scope.workload_conf.first;
             } else {
                 auto dim = helpers::str_split(matrix_name.substr(1), 'x');
                 args += std::string(" -matrix generate");
