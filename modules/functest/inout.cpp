@@ -327,9 +327,9 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
                 result_val = v[0];
             }
             double diff = fabs(result_val - testitem.base[section + "/" + parameter]);
-            if (diff > 1e-11) { // FIXME make this const a cmdline param
+            if (diff > 1e-8) { // FIXME make this const a cmdline param
 #ifdef DEBUG
-                std::cout << ">> functest: diff > 1e-11. GOLD VALUE COMPARISON FAILED!" << std::endl;
+                std::cout << ">> functest: diff > 1e-8. GOLD VALUE COMPARISON FAILED!" << std::endl;
 #endif
                 comment = std::string("Gold value comparison failed par=") + it.first + std::string(" diff=") + std::to_string(diff); 
                 status = status_t::F;
