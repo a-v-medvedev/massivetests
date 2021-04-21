@@ -24,6 +24,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <iomanip>
 #include <algorithm>
 #include <unistd.h>
 #include <assert.h>
@@ -62,6 +63,13 @@ int convert<int>(const std::string &value);
 
 template <>
 size_t convert<size_t>(const std::string &value);
+
+static inline std::string flt2str(double x) {
+    std::ostringstream ss;
+    ss << std::setw(12) << x;
+    return ss.str();
+}
+
 
 template <typename KEY, typename VALUE>
 std::vector<std::pair<KEY, VALUE>> parsers_map_to_vector(const args_parser &parser,
