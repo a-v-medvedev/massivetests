@@ -33,6 +33,7 @@ struct test_item_t {
     std::map<std::string, double> base;
     bool skip = false;
     unsigned timeout = 15;  // FIXME make it a cmdline param
+    double tolerance = 1e-10; // FIXME make it a cmdline param
     void load(const std::string &_name) {
         name = _name;
         std::ifstream in;
@@ -50,6 +51,9 @@ struct test_item_t {
             }
             if (opts["timeout"]) {
                 timeout = opts["timeout"].as<unsigned>();
+            }
+            if (opts["tolerance"]) {
+                tolerance = opts["tolerance"].as<double>();
             }
         }
         const auto &vals = item["values"].as<YAML::Node>();
