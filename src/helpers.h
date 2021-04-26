@@ -64,6 +64,10 @@ int convert<int>(const std::string &value);
 template <>
 size_t convert<size_t>(const std::string &value);
 
+static inline std::string bool2str(bool v) {
+    return v ? "true" : "false";
+}
+
 static inline std::string flt2str(double x) {
     std::ostringstream ss;
     ss.setf(std::ios::fixed, std::ios::floatfield);

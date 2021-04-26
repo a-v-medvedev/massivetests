@@ -28,55 +28,84 @@
 
 namespace functest {
 
-#if 0
-struct common_params_t {
-    std::string name;
-    std::map<std::string, double> base;
-    bool skip = false;
-    unsigned timeout = 15;  // FIXME make it a cmdline param
-    double tolerance = 1e-10; // FIXME make it a cmdline param
-    void load(const std::string &_name) {
-		
-/*
-        name = _name;
-        std::ifstream in;
-        in.open("test_items.yaml");
-        auto stream = YAML::Load(in);
-        if (!stream[name]) {
-            skip = true;
-            return;
-        }
-        const auto &item = stream[name].as<YAML::Node>();
-        if (item["options"]) {
-            const auto &opts = item["options"].as<YAML::Node>();
-            if (opts["skip"]) {
-                skip = opts["skip"].as<bool>();
-            }
-            if (opts["timeout"]) {
-                timeout = opts["timeout"].as<unsigned>();
-            }
-            if (opts["tolerance"]) {
-                tolerance = opts["tolerance"].as<double>();
-            } else {
-                
-            }
-        }
-        const auto &vals = item["values"].as<YAML::Node>();
-        for (auto it = vals.begin(); it != vals.end(); ++it) {
-            base[it->first.as<std::string>()] = it->second.as<double>();
-        }
-*/
-    }
-};
-#endif
-
 struct test_item_t {
     std::string name;
     std::map<std::string, double> base;
 	std::map<std::string, std::map<std::pair<int, int>, double>> tolerance_variations;
+	std::map<std::pair<int, int>, unsigned> timeout_variations;
+	std::map<std::pair<int, int>, bool> skip_flag_variations;
     bool skip = false;
     unsigned timeout = 15;  // FIXME make it a cmdline param
     double tolerance = 1e-10; // FIXME make it a cmdline param
+    bool get_int_pair_from_string(const std::string &str, std::pair<int, int> &output) {
+        auto s = helpers::str_split(str, '/');
+        if (s.size() != 2)
+            return false;
+        bool success = true;
+        int n, ppn;
+        try {
+            n = std::stoi(s[0]);
+            ppn = std::stoi(s[1]);
+        }
+        catch(...) {
+            success = false;
+        }
+        if (!success)
+            return false;
+        output.first = n;
+        output.second = ppn;
+        return true;
+    }
+	void load_simple_common_params(YAML::Node &stream) {
+		std::cout << ">> Loading simple params variations." << std::endl;
+		if (!stream["common_params"]) 
+			return;
+		if (!(stream["common_params"]).as<YAML::Node>()["timeout"]) 
+			return;
+        const auto &cp = stream["common_params"].as<YAML::Node>();
+		{
+			const auto &timeout_dict = cp["timeout"].as<YAML::Node>();
+			std::pair<int, int> zero{0, 0};
+			unsigned default_timeout = timeout;
+			if (timeout_dict["default"]) {
+				default_timeout = timeout_dict["default"].as<unsigned>();
+			}
+			timeout_variations[zero] = default_timeout;
+			std::cout << ">> saving default timeout value: " << default_timeout << std::endl;
+			for (YAML::const_iterator it = timeout_dict.begin(); it != timeout_dict.end(); ++it) {
+				const auto& key = it->first.as<std::string>();
+				unsigned val = it->second.as<unsigned>();
+				if (key == "default")
+					continue;
+				std::pair<int, int> id;
+				if (!get_int_pair_from_string(key, id))
+					continue;
+				timeout_variations[id] = val;
+				std::cout << ">> saving timeout value: " << val << " for {" << id.first << "," << id.second << "}" << std::endl;
+			}
+		}
+		{
+			const auto skip_flag_dict = cp["skip"].as<YAML::Node>();
+			std::pair<int, int> zero{0, 0};
+			bool default_skip_flag = skip;
+			if (skip_flag_dict["default"]) {
+				default_skip_flag = skip_flag_dict["default"].as<bool>();
+			}
+			skip_flag_variations[zero] = default_skip_flag;
+			std::cout << ">> saving default skip flag value: " << helpers::bool2str(default_skip_flag) << std::endl;
+			for (YAML::const_iterator it = skip_flag_dict.begin(); it != skip_flag_dict.end(); ++it) {
+				const auto& key = it->first.as<std::string>();
+				bool val = it->second.as<bool>();
+				if (key == "default")
+					continue;
+				std::pair<int, int> id;
+				if (!get_int_pair_from_string(key, id))
+					continue;			
+				skip_flag_variations[id] = val;
+				std::cout << ">> saving skip flag value: " << helpers::bool2str(val) << " for {" << id.first << "," << id.second << "}" << std::endl;
+			}
+		}
+	}
 	void load_tolerance_from_common_params(YAML::Node &stream, const std::string &param) {
 		std::cout << ">> Loading tolerance dict for: " << param << std::endl;
 		if (!stream["common_params"]) 
@@ -87,36 +116,29 @@ struct test_item_t {
 		const auto &dict = cp["tolerance"].as<YAML::Node>();
 		if (!dict[param])
 			return;
-		double default_tolerance = tolerance;
 		const auto &tolerance_dict = dict[param].as<YAML::Node>();
-		if (tolerance_dict["default"]) {
-			default_tolerance = (tolerance_dict["default"]).as<double>();
-		}
-		std::pair<int, int> zero{0, 0};
-		tolerance_variations[param][zero] = default_tolerance;
-		for (YAML::const_iterator it = tolerance_dict.begin(); it != tolerance_dict.end(); ++it) {
-			if (it->first.as<std::string>() == "default")
-				continue;
-			auto s = helpers::str_split(it->first.as<std::string>(), '/');
-			if (s.size() != 2)
-				continue;
-			bool success = true;
-			int n, ppn;
-			try {
-				n = std::stoi(s[0]);
-				ppn = std::stoi(s[1]);
+		{
+			double default_tolerance = tolerance;
+			if (tolerance_dict["default"]) {
+				default_tolerance = tolerance_dict["default"].as<double>();
 			}
-			catch(...) {
-				success = false;
+			std::pair<int, int> zero{0, 0};
+			tolerance_variations[param][zero] = default_tolerance;
+			std::cout << ">> saving default tolerance value: " << helpers::flt2str(default_tolerance) << std::endl;
+			for (YAML::const_iterator it = tolerance_dict.begin(); it != tolerance_dict.end(); ++it) {
+				const auto& key = it->first.as<std::string>();
+				bool val = it->second.as<double>();
+				if (key == "default")
+					continue;
+				std::pair<int, int> id;
+				if (!get_int_pair_from_string(key, id))
+					continue;            
+				tolerance_variations[param][id] = val;
+				std::cout << ">> saving tolerance value: " << helpers::flt2str(val) << " for {" << id.first << "," << id.second << "}" << std::endl;
 			}
-			if (!success)
-				continue;
-			std::pair<int, int> id(n, ppn);
-			tolerance_variations[param][id] = (it->second).as<double>();
-			std::cout << ">> saving tolerance value: " << (it->second).as<double>() << " for {" << n << "," << ppn << "}" << std::endl;
 		}
 	}
-	double get_tolerance(const std::string &param, int n, int ppn) {
+	double get_tolerance(const std::string &param, int n, int ppn = 1) {
 		double default_tolerance = tolerance;
 		std::pair<int, int> zero(0, 0);
 		std::pair<int, int> id(n, ppn);
@@ -131,16 +153,35 @@ struct test_item_t {
 		}
 		return default_tolerance;
 	}
+    unsigned get_timeout(int n, int ppn = 1) {
+        unsigned default_timeout = timeout;
+        std::pair<int, int> zero(0, 0);
+        std::pair<int, int> id(n, ppn);
+		if (timeout_variations.find(zero) != timeout_variations.end()) {
+			default_timeout = timeout_variations[zero];
+		}
+		if (timeout_variations.find(id) != timeout_variations.end()) {
+			return timeout_variations[id];
+		}
+		return default_timeout;
+    }
     void load(const std::string &_name) {
         name = _name;
         std::ifstream in;
-        in.open("test_items.yaml");
+        std::string specialized = std::string("test_items_") + name + std::string(".yaml");
+        std::string generic = "test_items.yaml";
+        in.open(specialized);
+        if (!in.good()) {
+            in.open(generic);
+            if (!in.good()) {
+                assert(0 && "can't find a parameters file to read from.");
+            }
+        }
         auto stream = YAML::Load(in);
         if (!stream[name]) {
             skip = true;
             return;
         }
-			
         const auto &item = stream[name].as<YAML::Node>();
         if (item["options"]) {
             const auto &opts = item["options"].as<YAML::Node>();
@@ -161,7 +202,8 @@ struct test_item_t {
 			const auto &param = it->first.as<std::string>();
             base[param] = it->second.as<double>();
 			load_tolerance_from_common_params(stream, param);
-        }        
+        }
+		load_simple_common_params(stream);
     }
     using target_parameter_vector_t = std::vector<functest::traits::target_parameter_t>;
     target_parameter_vector_t
