@@ -66,7 +66,9 @@ size_t convert<size_t>(const std::string &value);
 
 static inline std::string flt2str(double x) {
     std::ostringstream ss;
-    ss << std::setw(12) << x;
+    ss.setf(std::ios::fixed, std::ios::floatfield);
+    ss.precision(12);
+    ss << x;
     return ss.str();
 }
 
