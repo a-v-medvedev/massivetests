@@ -31,12 +31,14 @@ namespace functest {
 struct test_item_t {
     std::string name;
     std::map<std::string, double> base;
+    protected:
 	std::map<std::string, std::map<std::pair<int, int>, double>> tolerance_variations;
 	std::map<std::pair<int, int>, unsigned> timeout_variations;
 	std::map<std::pair<int, int>, bool> skip_flag_variations;
     bool skip = false;
     unsigned timeout = 15;  // FIXME make it a cmdline param
     double tolerance = 1e-10; // FIXME make it a cmdline param
+    public:
     bool get_int_pair_from_string(const std::string &str, std::pair<int, int> &output) {
         auto s = helpers::str_split(str, '/');
         if (s.size() != 2)
@@ -60,9 +62,10 @@ struct test_item_t {
 		std::cout << ">> Loading simple params variations." << std::endl;
 		if (!stream["common_params"]) 
 			return;
-		if (!(stream["common_params"]).as<YAML::Node>()["timeout"]) 
-			return;
+		bool have_timeout_key = stream["common_params"].as<YAML::Node>()["timeout"]; 
+		bool have_skip_key = stream["common_params"].as<YAML::Node>()["skip"]; 
         const auto &cp = stream["common_params"].as<YAML::Node>();
+        if (have_timeout_key)
 		{
 			const auto &timeout_dict = cp["timeout"].as<YAML::Node>();
 			std::pair<int, int> zero{0, 0};
@@ -84,6 +87,7 @@ struct test_item_t {
 				std::cout << ">> saving timeout value: " << val << " for {" << id.first << "," << id.second << "}" << std::endl;
 			}
 		}
+        if (have_skip_key)
 		{
 			const auto skip_flag_dict = cp["skip"].as<YAML::Node>();
 			std::pair<int, int> zero{0, 0};
@@ -165,11 +169,25 @@ struct test_item_t {
 		}
 		return default_timeout;
     }
+    unsigned get_skip_flag(int n, int ppn = 1) {
+        unsigned default_skip_flag = skip;
+        std::pair<int, int> zero(0, 0);
+        std::pair<int, int> id(n, ppn);
+		if (skip_flag_variations.find(zero) != skip_flag_variations.end()) {
+			default_skip_flag = skip_flag_variations[zero];
+		}
+		if (skip_flag_variations.find(id) != skip_flag_variations.end()) {
+			return skip_flag_variations[id];
+		}
+		return default_skip_flag;
+    }
+
     void load(const std::string &_name) {
         name = _name;
-        std::ifstream in;
-        std::string specialized = std::string("test_items_") + name + std::string(".yaml");
+        auto s = helpers::str_split(name, '/');
+        std::string specialized = std::string("test_items_") + s[0] + std::string(".yaml");
         std::string generic = "test_items.yaml";
+        std::ifstream in;
         in.open(specialized);
         if (!in.good()) {
             in.open(generic);

@@ -22,7 +22,7 @@ struct input_maker_xamg : public input_maker {
     }
     virtual void make(std::string &input_yaml, std::string &psubmit_options, std::string &args) override {
         input_maker::make(input_yaml, psubmit_options, args);
-        if (testitem.skip) {
+        if (testitem.get_skip_flag(1)) {
             return;
         }
         auto matrix_name = scope.workload_sizes[0].first;

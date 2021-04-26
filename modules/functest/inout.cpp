@@ -108,7 +108,7 @@ void input_maker::write_out(const std::string &input_file_name) {
 
 void input_maker::make(std::string &input_yaml, std::string &psubmit_options, std::string &args) {
 	assert(scope.workload_sizes.size() == 1);
-    if (testitem.skip) {
+    if (testitem.get_skip_flag(1)) { // FIXME this code ignores separate n,ppn settings, have to change it
         psubmit_options = "";
         args = "";
         return;
@@ -126,8 +126,8 @@ void input_maker::make(std::string &input_yaml, std::string &psubmit_options, st
     if (conf_key != "") {
         args += std::string(" ") + conf_key + std::string(" ") + conf;
     }
-    if (timeout_key != "" && testitem.timeout) {
-        args += std::string(" ") + timeout_key + std::string(" ") + std::to_string(testitem.timeout);
+    if (timeout_key != "" && testitem.get_timeout(1)) { // FIXME this code ignores separate n,ppn settings, have to change it
+        args += std::string(" ") + timeout_key + std::string(" ") + std::to_string(testitem.get_timeout(1));
     }
 
     char *aux_opts;
@@ -183,7 +183,7 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
 	const auto wconf = scope.workload_conf;
 	const auto size = scope.workload_sizes[0];
     using val_t = double;
-    using vals_t = std::map<decltype(size), std::vector<val_t>>;
+    using vals_t = std::map<decltype(size), std::vector<std::pair<val_t, std::string>>>;
     std::map<std::string, vals_t> values;
     status_t status = status_t::P;
     std::string comment;
@@ -205,28 +205,27 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
             status = status_t::S;
             break;
         }
+        std::string indir = std::string("results.") + std::to_string(j);
         if (proc->retval) {
             comment = std::string("Non-zero return code: ") + std::to_string(proc->retval);
             status = status_t::N;
-            std::string dir = "results." + std::to_string(j);
             struct stat s;
             bool ok = false;
-            int r = stat(dir.c_str(), &s);
+            int r = stat(indir.c_str(), &s);
             if (!r && ((s.st_mode & S_IFDIR) == S_IFDIR)) {
                 ok = true;
             }
             if (!ok) {
-                std::cout << "OUTPUT: functest: can't open directory: " << dir
+                std::cout << "OUTPUT: functest: can't open directory: " << indir
                           << std::endl;
                 return;
             }
             break;
         }
-        std::string infile =
-            "results." + std::to_string(j) + "/result." + std::to_string(j) + ".yaml";
-        auto st = check_if_failed("results." + std::to_string(j), std::to_string(j));
+        std::string infile = indir + "/result." + std::to_string(j) + ".yaml";
+        auto st = check_if_failed(indir, std::to_string(j));
         if (st != status_t::P) {
-            comment = std::string("dir=results.") + std::to_string(j);
+            comment = std::string("dir=") + indir;
             status = st;
             break;
         }
@@ -270,7 +269,8 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
                 size_t n = 0;
                 for (YAML::const_iterator it = pn.begin(); it != pn.end(); ++it) {
                     if (i == n++) {
-                        vals[size].push_back(it->as<val_t>());
+                        std::pair<val_t, std::string> item(it->as<val_t>(), indir); 
+                        vals[size].push_back(item);
                         break;
                     }
                 }
@@ -278,7 +278,8 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
                 if (!sec[parameter])
                     continue;
                 const auto &p = sec[parameter].as<YAML::Node>();
-                vals[size].push_back(p.as<val_t>());
+                std::pair<val_t, std::string> item(p.as<val_t>(), indir);
+                vals[size].push_back(item);
             }
         }
     }
@@ -296,6 +297,7 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
             assert(sp.size() == 2);
             auto section = sp[0];
             auto parameter = sp[1];
+            std::string param = section + "/" + parameter;
             auto &vals = it.second;
 #ifdef DEBUG
             std::cout << ">> functest: output: section=" << section << " parameter=" << parameter
@@ -307,37 +309,45 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
                 std::cout << ">> functest: output: nothing found for section/parameter: " << it.first
                           << std::endl;
 #endif
-                comment = std::string("No data for par=") + it.first;
+                comment = std::string("No data for par=") + param;
                 status = status_t::N;
                 break;
             }
             val_t result_val = 0.0;
+            std::string indir;
             if (v.size() == 1) {
-                result_val = v[0];
+                result_val = v[0].first;
+                indir = v[0].second;
             } else {
                 sort(v.begin(), v.end());
-                if (v.front() != v.back()) {
+                auto diff = v.front().first - v.back().first;
+                if (diff != 0) {
 #ifdef DEBUG
                     std::cout << ">> functest: v.front() != v.back(). ATTEMPTS COMPARISON FAILED!" << std::endl;
 #endif
-                    comment = std::string("Attempts comparison failed par=") + it.first + std::string(" diff=") + std::to_string(fabs(v.front() - v.back())); 
+                    comment = std::string("Attempts comparison failed par=") + param + 
+                              std::string(" diff=") + helpers::flt2str(fabs(diff)) +
+                              std::string(" dir=") + v.front().second +
+                              std::string(" dir2=") + v.back().second;
+                              ; 
                     status = status_t::F;
                     break;
                 }
-                result_val = v[0];
+                result_val = v[0].first;
+                indir = v[0].second;
             }
-            std::string param = section + "/" + parameter;
             double diff = fabs(result_val - testitem.base[param]);
             double tolerance = testitem.get_tolerance(param, n, ppn);
             if (diff > tolerance) {
 #ifdef DEBUG
                 std::cout << ">> functest: diff > " << tolerance << ". GOLD VALUE COMPARISON FAILED!" << std::endl;
 #endif
-                comment = std::string("Gold value comparison failed par=") + it.first + 
+                comment = std::string("Gold value comparison failed par=") + param + 
                           std::string(" diff=") + helpers::flt2str(diff) + 
                           std::string(" tol=") + helpers::flt2str(tolerance) + 
-                          std::string(" excepted=") + helpers::flt2str(testitem.base[param]) +
-                          std::string(" acquired=") + helpers::flt2str(result_val); 
+                          std::string(" expected=") + helpers::flt2str(testitem.base[param]) +
+                          std::string(" acquired=") + helpers::flt2str(result_val) +
+                          std::string(" dir=") + indir; 
                 status = status_t::F;
                 break;
             }
