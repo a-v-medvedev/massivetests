@@ -85,7 +85,7 @@ struct test_item_t {
 			return;
         const auto &cp = stream["common_params"].as<YAML::Node>();
 		const auto &dict = cp["tolerance"].as<YAML::Node>();
-		if (!dict[name])
+		if (!dict[param])
 			return;
 		double default_tolerance = tolerance;
 		const auto &tolerance_dict = dict[param].as<YAML::Node>();
