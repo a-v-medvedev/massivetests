@@ -326,14 +326,17 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
                 }
                 result_val = v[0];
             }
-            double diff = fabs(result_val - testitem.base[section + "/" + parameter]);
-            if (diff > testitem.tolerance) {
+            std::string param = section + "/" + parameter;
+            double diff = fabs(result_val - testitem.base[param]);
+            double tolerance = testitem.get_tolerance(param, n, ppn);
+            if (diff > tolerance) {
 #ifdef DEBUG
-                std::cout << ">> functest: diff > " << testitem.tolerance << ". GOLD VALUE COMPARISON FAILED!" << std::endl;
+                std::cout << ">> functest: diff > " << tolerance << ". GOLD VALUE COMPARISON FAILED!" << std::endl;
 #endif
                 comment = std::string("Gold value comparison failed par=") + it.first + 
                           std::string(" diff=") + helpers::flt2str(diff) + 
-                          std::string(" excepted=") + helpers::flt2str(testitem.base[section + "/" + parameter]) +
+                          std::string(" tol=") + helpers::flt2str(tolerance) + 
+                          std::string(" excepted=") + helpers::flt2str(testitem.base[param]) +
                           std::string(" acquired=") + helpers::flt2str(result_val); 
                 status = status_t::F;
                 break;
