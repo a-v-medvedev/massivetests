@@ -20,7 +20,7 @@
 class process;
 
 struct input_maker_base {
-    virtual void make(std::string &input_yaml, std::string &psubmit_options, std::string &args) = 0;
+    virtual void make(int n, int ppn, std::string &input_yaml, std::string &psubmit_options, std::string &args) = 0;
     virtual ~input_maker_base() {}
 };
 

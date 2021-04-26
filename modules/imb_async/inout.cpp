@@ -85,7 +85,9 @@ void input_maker::write_out(const std::string &input_file_name) {
     was_written = true;
 }
 
-void input_maker::make(std::string &input_yaml, std::string &psubmit_options, std::string &args) {
+void input_maker::make(int n, int ppn, std::string &input_yaml, std::string &psubmit_options, std::string &args) {
+    (void)n;
+    (void)ppn;
     input_yaml = "./input_" + std::to_string(scope.id) + ".yaml";
     psubmit_options = "./psubmit.opt";
     args = "-load " + input_yaml + " -output " + " benchmark.%PSUBMIT_JOBID%.yaml";

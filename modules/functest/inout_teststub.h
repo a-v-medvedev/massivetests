@@ -21,8 +21,8 @@ struct input_maker_teststub : public input_maker {
     input_maker_teststub(test_scope<traits> &_scope) : input_maker(_scope) {
         input_maker::result_key = "-output";
     }
-    virtual void make(std::string &input_yaml, std::string &psubmit_options, std::string &args) override {
-        input_maker::make(input_yaml, psubmit_options, args);
+    virtual void make(int n, int ppn, std::string &input_yaml, std::string &psubmit_options, std::string &args) override {
+        input_maker::make(n, ppn, input_yaml, psubmit_options, args);
     }
 };
 

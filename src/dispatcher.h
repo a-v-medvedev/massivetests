@@ -76,7 +76,7 @@ struct dispatcher {
                 break;
             std::shared_ptr<process> proc = waiting_processes[0];
             std::string input_yaml, psubmit_options, args;
-            proc->im->make(input_yaml, psubmit_options, args);
+            proc->im->make(proc->n, proc->ppn, input_yaml, psubmit_options, args);
 #if DEBUG
             std::cout << ">> dispatcher: start: {" << proc->n << "," << proc->ppn
                       << "} input=" << input_yaml << " run.options=" << psubmit_options << " args={"

@@ -106,9 +106,9 @@ void input_maker::write_out(const std::string &input_file_name) {
 }
 */
 
-void input_maker::make(std::string &input_yaml, std::string &psubmit_options, std::string &args) {
+void input_maker::make(int n, int ppn, std::string &input_yaml, std::string &psubmit_options, std::string &args) {
 	assert(scope.workload_sizes.size() == 1);
-    if (testitem.get_skip_flag(1)) { // FIXME this code ignores separate n,ppn settings, have to change it
+    if (testitem.get_skip_flag(n, ppn)) { 
         psubmit_options = "";
         args = "";
         return;
@@ -126,8 +126,8 @@ void input_maker::make(std::string &input_yaml, std::string &psubmit_options, st
     if (conf_key != "") {
         args += std::string(" ") + conf_key + std::string(" ") + conf;
     }
-    if (timeout_key != "" && testitem.get_timeout(1)) { // FIXME this code ignores separate n,ppn settings, have to change it
-        args += std::string(" ") + timeout_key + std::string(" ") + std::to_string(testitem.get_timeout(1));
+    if (timeout_key != "" && testitem.get_timeout(n, ppn)) {
+        args += std::string(" ") + timeout_key + std::string(" ") + std::to_string(testitem.get_timeout(n, ppn));
     }
 
     char *aux_opts;

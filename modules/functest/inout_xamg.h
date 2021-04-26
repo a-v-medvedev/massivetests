@@ -20,9 +20,9 @@ namespace functest {
 struct input_maker_xamg : public input_maker {
     input_maker_xamg(test_scope<traits> &_scope) : input_maker(_scope) { 
     }
-    virtual void make(std::string &input_yaml, std::string &psubmit_options, std::string &args) override {
-        input_maker::make(input_yaml, psubmit_options, args);
-        if (testitem.get_skip_flag(1)) {
+    virtual void make(int n, int ppn, std::string &input_yaml, std::string &psubmit_options, std::string &args) override {
+        input_maker::make(n, ppn, input_yaml, psubmit_options, args);
+        if (testitem.get_skip_flag(n, ppn)) {
             return;
         }
         auto matrix_name = scope.workload_sizes[0].first;

@@ -256,7 +256,7 @@ struct input_maker : public input_maker_base {
     test_item_t testitem;
     test_scope<traits> &scope;
     input_maker(test_scope<traits> &_scope);
-    virtual void make(std::string &input_yaml, std::string &psubmit_options, std::string &args);
+    virtual void make(int n, int ppn, std::string &input_yaml, std::string &psubmit_options, std::string &args);
 };
 
 struct output_maker : public output_maker_base {
