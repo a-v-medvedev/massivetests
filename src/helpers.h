@@ -70,7 +70,7 @@ static inline std::string bool2str(bool v) {
 
 static inline std::string flt2str(double x) {
     std::ostringstream ss;
-    ss.setf(std::ios::scentific, std::ios::floatfield);
+    ss.setf(std::ios::scientific, std::ios::floatfield);
     ss.precision(12);
     ss << x;
     return ss.str();
