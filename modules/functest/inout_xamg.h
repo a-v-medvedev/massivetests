@@ -46,8 +46,8 @@ struct input_maker_xamg : public input_maker {
         }
         args += std::string(" -logfile logfile.%PSUBMIT_JOBID%.log");
         args += std::string(" -test_iters ") + std::to_string(scope.workload_sizes[0].second);
-        if (testitem.base.find("solver/niters") != testitem.base.end()) {
-            args += std::string(" -solver_params max_iters=") + std::to_string((int)testitem.base["solver/niters"]);
+        if (testitem.base.find("solver/iters") != testitem.base.end()) {
+            args += std::string(" -solver_params max_iters=") + std::to_string((int)testitem.base["solver/iters"]);
         }
     }
 };

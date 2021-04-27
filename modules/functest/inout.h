@@ -59,7 +59,6 @@ struct test_item_t {
         return true;
     }
 	void load_simple_common_params(YAML::Node &stream) {
-		std::cout << ">> Loading simple params variations." << std::endl;
 		if (!stream["common_params"]) 
 			return;
 		bool have_timeout_key = stream["common_params"].as<YAML::Node>()["timeout"]; 
@@ -74,7 +73,6 @@ struct test_item_t {
 				default_timeout = timeout_dict["default"].as<unsigned>();
 			}
 			timeout_variations[zero] = default_timeout;
-			std::cout << ">> saving default timeout value: " << default_timeout << std::endl;
 			for (YAML::const_iterator it = timeout_dict.begin(); it != timeout_dict.end(); ++it) {
 				const auto& key = it->first.as<std::string>();
 				unsigned val = it->second.as<unsigned>();
@@ -84,7 +82,6 @@ struct test_item_t {
 				if (!get_int_pair_from_string(key, id))
 					continue;
 				timeout_variations[id] = val;
-				std::cout << ">> saving timeout value: " << val << " for {" << id.first << "," << id.second << "}" << std::endl;
 			}
 		}
         if (have_skip_key)
@@ -96,7 +93,6 @@ struct test_item_t {
 				default_skip_flag = skip_flag_dict["default"].as<bool>();
 			}
 			skip_flag_variations[zero] = default_skip_flag;
-			std::cout << ">> saving default skip flag value: " << helpers::bool2str(default_skip_flag) << std::endl;
 			for (YAML::const_iterator it = skip_flag_dict.begin(); it != skip_flag_dict.end(); ++it) {
 				const auto& key = it->first.as<std::string>();
 				bool val = it->second.as<bool>();
@@ -106,12 +102,10 @@ struct test_item_t {
 				if (!get_int_pair_from_string(key, id))
 					continue;			
 				skip_flag_variations[id] = val;
-				std::cout << ">> saving skip flag value: " << helpers::bool2str(val) << " for {" << id.first << "," << id.second << "}" << std::endl;
 			}
 		}
 	}
 	void load_tolerance_from_common_params(YAML::Node &stream, const std::string &param) {
-		std::cout << ">> Loading tolerance dict for: " << param << std::endl;
 		if (!stream["common_params"]) 
 			return;
 		if (!(stream["common_params"]).as<YAML::Node>()["tolerance"]) 
@@ -128,7 +122,6 @@ struct test_item_t {
 			}
 			std::pair<int, int> zero{0, 0};
 			tolerance_variations[param][zero] = default_tolerance;
-			std::cout << ">> saving default tolerance value: " << helpers::flt2str(default_tolerance) << std::endl;
 			for (YAML::const_iterator it = tolerance_dict.begin(); it != tolerance_dict.end(); ++it) {
 				const auto& key = it->first.as<std::string>();
 				bool val = it->second.as<double>();
@@ -138,7 +131,6 @@ struct test_item_t {
 				if (!get_int_pair_from_string(key, id))
 					continue;            
 				tolerance_variations[param][id] = val;
-				std::cout << ">> saving tolerance value: " << helpers::flt2str(val) << " for {" << id.first << "," << id.second << "}" << std::endl;
 			}
 		}
 	}
