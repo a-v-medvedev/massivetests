@@ -30,7 +30,6 @@ MASSIVE_TESTS_WORKLOADS="$WORKLOADS"
 MASSIVE_TESTS_CONFS="$CONFS"
 MASSIVE_TESTS_SECTIONS="$SECTIONS"
 MASSIVE_TESTS_PARAMETERS="$PARAMETERS"
-MASSIVE_TESTS_EXEC_REPEATS=$MASSIVE_TESTS_EXEC_REPEATS
 TUPLE=$(comb4 "$WORKLOADS" "$CONFS" "$SECTIONS" "$PARAMETERS")
 for mode in $MODES; do
     for submode in $SUBMODES; do
@@ -38,7 +37,7 @@ for mode in $MODES; do
         set_specific_params "$mode" "$submode"
         massivetest-run
         move_results "$CONF"
-        ./extract.sh "$CONF" "XXX" "$MASSIVE_TESTS_KEYWORDS" "$MASSIVE_TESTS_SIZEKEYWORD" > "out.$CONF" && true
+        ./extract.sh "$CONF" "$TUPLE" "$MASSIVE_TESTS_KEYWORDS" "$MASSIVE_TESTS_SIZEKEYWORD" > "out.$CONF" && true
         if [ "$?" != "0" ]; then
             tail -n1 "out.$CONF"
             fatal "./extract.sh failed."
