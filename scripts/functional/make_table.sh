@@ -24,13 +24,13 @@ for b in $BENCHS; do
         n=1
         for src in sum.*/out.summary.$b; do  
             if [ -z "$made_base_out" ]; then
-                    cat $src | awk 'NF==4 && $1!="#" { BASE[$1 " " $2]=$3;} END { for (i in BASE) { print i " : " BASE[i] " :" }} ' | sort -k1,1n -k2,2n > table.$b.0
-                    echo "# nnodes len : base :" >> table.$b.0
+                    cat $src | awk 'NF==4 && $1!="#" { print $1 " " $2 " \t:"}' > table.$b.0
+                    echo -e "# nnodes len \t:" >> table.$b.0
                     made_base_out=yes
             fi
             submodes=$(grep '^#' $src | sed 's/# //')
-            cat $src | awk 'NF==4 && $1!="#" { COMPARE[$1 " " $2]=COMPARE[$1 " " $2] " " $4 } END { for (i in COMPARE) { print i " :" COMPARE[i] " :" } }' | sort -k1,1n -k2,2n | awk '{$1=$2=$3="";print;}'> table.$b.$n
-            echo "${src} (${submodes}) :" | sed 's/^sum.//;s!/out.summary[^ ]*!!' >> table.$b.$n
+            cat $src | awk 'NF==4 && $1!="#" { COMPARE[$1 " " $2]=COMPARE[$1 " " $2] " " $3; if ($4!="-") COMPARE[$1 " " $2]=COMPARE[$1 " " $2] "(" $4 ")"; } END { for (i in COMPARE) { printf i " :" COMPARE[i] "\n" } }' | sort -k1,1n -k2,2n | awk '{$1=$2=$3="";gsub(/[ ]*/,""); printf $0 "\t\t:\n";}'> table.$b.$n
+            echo -e "${src} (${submodes}) \t:" | sed 's/^sum\.conf.//;s!/out.summary[^ ]*!!' >> table.$b.$n
             n=$(expr $n \+ 1)
         done
         paste -d ' ' table.$b.* > table.$b

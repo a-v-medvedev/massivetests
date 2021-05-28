@@ -35,11 +35,16 @@ function getline() {
         keyword=$(elem "$keywords" "$i" :)
         if [ "$keyword" != "X" ]; then
             key=$(elem "$key_block" "$i" :)
-            x="/[ {]${keyword}: [\"]*${key}[\"]*,/"
+            x="/[ {};]${keyword}: [\"]*${key}[\"]*,/"
             search="${search} && ${x}"
         fi
     done
 	cat "$file" | awk "$search { print }"
+}
+
+function get_dir() {
+    local line="$1"
+    echo "$line" | awk -F'[ =;}]' '{ for (i=1;i<=NF;i++) { if ($i=="dir") flag=1; else if (flag==1) { print $i; break; } } }'
 }
 
 DIR="$1"
@@ -56,10 +61,13 @@ for p in $PARAMS; do
     for n in $MASSIVE_TESTS_NODES; do
         # FIXME add ppn handling
         for size in $MASSIVE_TESTS_SIZES; do
-            L=$(getline $FIRST/output.yaml "$KEYWORDS" "$p" "$SIZEKEYWORD" "$n" "$size")
+            L=$(getline $DIR/output.yaml "$KEYWORDS" "$p" "$SIZEKEYWORD" "$n" "$size")
             V=$(get_value "$L") 
+            D=$(get_dir "$L")
+            [ -z "$D" ] && D=-
+            [ "$D" != "-" ] && D=$DIR/$D
             [ -z "$V" ] && echo "ERROR: No data for {n=${n},size=${size}} in output.yaml file in the directory for extraction ($DIR)" && exit 1
-            echo $n $size $V
+            echo $n $size $V $D
         done
     done
     echo "---"
