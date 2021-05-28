@@ -37,7 +37,7 @@ struct test_item_t {
 	std::map<std::pair<int, int>, bool> skip_flag_variations;
     bool skip = false;
     unsigned timeout = 15;  // FIXME make it a cmdline param
-    double tolerance = 1e-10; // FIXME make it a cmdline param
+    double tolerance = 1e-8; // FIXME make it a cmdline param
     public:
     bool get_int_pair_from_string(const std::string &str, std::pair<int, int> &output) {
         auto s = helpers::str_split(str, '/');
