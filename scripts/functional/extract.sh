@@ -44,7 +44,40 @@ function getline() {
 
 function get_dir() {
     local line="$1"
-    echo "$line" | awk -F'[ =;}]' '{ for (i=1;i<=NF;i++) { if ($i=="dir") flag=1; else if (flag==1) { print $i; break; } } }'
+    echo "$line" | awk -F'[ =;")}]' '{ for (i=1;i<=NF;i++) { if ($i=="dir") flag=1; else if (flag==1) { print $i; break; } } }'
+}
+
+function get_ref_number() {
+    local dir="$1"
+    local value="$2"
+    local line="$3"
+    if [ "$dir" == "-" ]; then
+        echo "-"
+    else
+        local STATUS=""
+        case "$value" in
+            F) STATUS="FAILED"
+                ;;
+            N) STATUS="NONZERO"
+                ;;
+            T) STATUS="TIMEOUT"
+                ;;
+            A) STATUS="ASSERT"
+                ;;
+            C) STATUS="CRASH"
+                ;;
+            E) STATUS="EXCEPTION"
+                ;;
+        esac
+        [ -e "references.txt" ] || touch references.txt
+        N=$(wc -l < references.txt)
+        NN=$(expr "$N" \+ 1)
+        name=$(basename $dir)
+        conf=$(dirname $dir)
+        echo "${NN}) ${STATUS}: ${name}/  ---  $conf  ---  $line" >> references.txt
+        echo $NN
+        cp -a $dir summary/
+    fi
 }
 
 DIR="$1"
@@ -67,7 +100,7 @@ for p in $PARAMS; do
             [ -z "$D" ] && D=-
             [ "$D" != "-" ] && D=$DIR/$D
             [ -z "$V" ] && echo "ERROR: No data for {n=${n},size=${size}} in output.yaml file in the directory for extraction ($DIR)" && exit 1
-            echo $n $size $V $D
+            echo $n $size $V $(get_ref_number "$D" "$V" "$L")
         done
     done
     echo "---"

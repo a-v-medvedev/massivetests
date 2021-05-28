@@ -31,6 +31,9 @@ MASSIVE_TESTS_CONFS="$CONFS"
 MASSIVE_TESTS_SECTIONS="$SECTIONS"
 MASSIVE_TESTS_PARAMETERS="$PARAMETERS"
 TUPLE=$(comb4 "$WORKLOADS" "$CONFS" "$SECTIONS" "$PARAMETERS")
+rm -f references.txt
+rm -rf summary
+mkdir summary
 for mode in $MODES; do
     for submode in $SUBMODES; do
         CONF=conf.${mode}_${submode}
@@ -50,4 +53,6 @@ for mode in $MODES; do
 done
 
 ./make_table.sh "$TUPLE"
+
+cp references.txt table.* test_items.yaml input_*.yaml summary/
 
