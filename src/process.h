@@ -102,7 +102,7 @@ struct process {
             return true;
         }
         full_output += s;
-#ifdef DEBUG
+#ifdef DEBUG  // FIXME consider making this output a command-line switchable option
         std::cout << pid << ": " << s; // no endline, it is already there
 #endif
 

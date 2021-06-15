@@ -34,6 +34,7 @@
 #include "modules/functest/inout.h"
 #include "modules/functest/inout_teststub.h"
 #include "modules/functest/inout_xamg.h"
+#include "modules/functest/inout_qubiq.h"
 #include "results.h"
 
 namespace functest {
@@ -88,6 +89,8 @@ std::shared_ptr<input_maker_base> traits::make_input_maker(test_scope<traits> &s
         return std::make_shared<input_maker_teststub>(scope);
     } else if (application == "xamg") {
         return std::make_shared<input_maker_xamg>(scope);
+    } else if (application == "qubiq") {
+        return std::make_shared<input_maker_qubiq>(scope);
     } else {
         return nullptr;
     }
@@ -99,6 +102,8 @@ std::shared_ptr<output_maker_base> traits::make_output_maker(test_scope<traits> 
         return std::make_shared<output_maker_teststub>(scope, outfile);
     } else if (application == "xamg") {
         return std::make_shared<output_maker_xamg>(scope, outfile);
+    } else if (application == "qubiq") {
+        return std::make_shared<output_maker_qubiq>(scope, outfile);
     } else {
         return nullptr;
     }

@@ -77,7 +77,7 @@ struct dispatcher {
             std::shared_ptr<process> proc = waiting_processes[0];
             std::string input_yaml, psubmit_options, args;
             proc->im->make(proc->n, proc->ppn, input_yaml, psubmit_options, args);
-#if DEBUG
+#if DEBUG  // FIXME consider making this output a command-line switchable option
             std::cout << ">> dispatcher: start: {" << proc->n << "," << proc->ppn
                       << "} input=" << input_yaml << " run.options=" << psubmit_options << " args={"
                       << args << "} }" << std::endl;
@@ -148,7 +148,7 @@ struct dispatcher {
                 }
                 if (!all_finished)
                     continue;
-#ifdef DEBUG
+#ifdef DEBUG // FIXME consider making this output a command-line switchable option
                 auto &conf = it.first;
                 auto &wconf = std::get<1>(conf);
                 auto &pconf = std::get<2>(conf);

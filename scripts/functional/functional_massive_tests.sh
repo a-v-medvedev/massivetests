@@ -38,7 +38,9 @@ for mode in $MODES; do
     for submode in $SUBMODES; do
         CONF=conf.${mode}_${submode}
         set_specific_params "$mode" "$submode"
+        set -x
         massivetest-run
+        set +x
         move_results "$CONF"
         ./extract.sh "$CONF" "$TUPLE" "$MASSIVE_TESTS_KEYWORDS" "$MASSIVE_TESTS_SIZEKEYWORD" > "out.$CONF" && true
         if [ "$?" != "0" ]; then
@@ -49,10 +51,10 @@ for mode in $MODES; do
     NN=$(nelems "$MASSIVE_TESTS_NODES")
     NS=$(nelems "$MASSIVE_TESTS_SIZES")
     STEP=$(expr "$NN" \* "$NS" \+ 3)
-    ./script-postproc.sh conf.$mode "$STEP" "$TUPLE"
+    ./script-postproc.sh conf.$mode "$STEP" "$TUPLE" || exit 1 && true
 done
 
-./make_table.sh "$TUPLE"
+./make_table.sh "$TUPLE" || exit 1 && true
 
-cp references.txt table.* test_items.yaml input_*.yaml summary/
+cp references.txt table.* test_items.yaml input_*.yaml summary/ || exit 1 && true
 

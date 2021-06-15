@@ -34,6 +34,7 @@
 #include "modules/functest/inout.h"
 #include "modules/functest/inout_teststub.h"
 #include "modules/functest/inout_xamg.h"
+#include "modules/functest/inout_qubiq.h"
 
 #include "helpers.h"
 #include "results.h"
@@ -46,7 +47,7 @@
 #define SLEEPTIME 10   // was: 100 for Lom2  FIXME make it an external cmdline param
 #endif
 
-#ifndef MISSING_FILES_FATAL
+#ifndef MISSING_FILES_FATAL // FIXME make it an external cmdline param
 #define MISSING_FILES_FATAL 0
 #endif
 
@@ -241,7 +242,7 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
                       << std::endl;
             continue;
         }
-#ifdef DEBUG
+#ifdef DEBUG // FIXME make it an external cmdline param
         std::cout << ">> functest: input: reading " << infile << std::endl;
 #endif
         auto stream = YAML::Load(in);
@@ -284,6 +285,7 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
         }
     }
     // NOTE: commented out this assert: lets handle missing input files as non-fatal case
+    // FIXME consider this test a command-line switchable option
     // assert(values.size() == attempts.size());
     attempts.resize(0);
     int nresults = 0;
@@ -299,13 +301,13 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
             auto parameter = sp[1];
             std::string param = section + "/" + parameter;
             auto &vals = it.second;
-#ifdef DEBUG
+#ifdef DEBUG  // FIXME make it an external cmdline param
             std::cout << ">> functest: output: section=" << section << " parameter=" << parameter
                       << std::endl;
 #endif
             auto &v = vals[size];
             if (v.size() == 0) {
-#ifdef DEBUG
+#ifdef DEBUG // FIXME make it an external cmdline param
                 std::cout << ">> functest: output: nothing found for section/parameter: " << it.first
                           << std::endl;
 #endif
@@ -322,7 +324,7 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
                 sort(v.begin(), v.end());
                 auto diff = v.front().first - v.back().first;
                 if (diff != 0) {
-#ifdef DEBUG
+#ifdef DEBUG  // FIXME make it an external cmdline param
                     std::cout << ">> functest: v.front() != v.back(). ATTEMPTS COMPARISON FAILED!" << std::endl;
 #endif
                     comment = std::string("Attempts comparison failed par=") + param + 
@@ -339,7 +341,7 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
             double diff = fabs(result_val - testitem.base[param]);
             double tolerance = testitem.get_tolerance(param, n, ppn);
             if (diff > tolerance) {
-#ifdef DEBUG
+#ifdef DEBUG  // FIXME make it an external cmdline param
                 std::cout << ">> functest: diff > " << tolerance << ". GOLD VALUE COMPARISON FAILED!" << std::endl;
 #endif
                 comment = std::string("Gold value comparison failed par=") + param + 
