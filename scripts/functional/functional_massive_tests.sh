@@ -38,9 +38,7 @@ for mode in $MODES; do
     for submode in $SUBMODES; do
         CONF=conf.${mode}_${submode}
         set_specific_params "$mode" "$submode"
-        set -x
         massivetest-run
-        set +x
         move_results "$CONF"
         ./extract.sh "$CONF" "$TUPLE" "$MASSIVE_TESTS_KEYWORDS" "$MASSIVE_TESTS_SIZEKEYWORD" > "out.$CONF" && true
         if [ "$?" != "0" ]; then

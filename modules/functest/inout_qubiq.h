@@ -29,6 +29,7 @@ struct input_maker_qubiq : public input_maker {
         auto grid = scope.workload_sizes[0].first;
         assert(grid.size() != 0);
         args += std::string(" -grid ") + grid;
+        args += std::string(" -remove_out yes");
 /*        
         args += std::string(" -logfile logfile.%PSUBMIT_JOBID%.log");
         args += std::string(" -test_iters ") + std::to_string(scope.workload_sizes[0].second);
