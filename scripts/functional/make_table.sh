@@ -29,7 +29,7 @@ for b in $BENCHS; do
                     made_base_out=yes
             fi
             submodes=$(grep '^#' $src | sed 's/# //')
-            cat $src | awk 'NF==4 && $1!="#" { COMPARE[$1 " " $2]=COMPARE[$1 " " $2] " " $3; if ($4!="-") COMPARE[$1 " " $2]=COMPARE[$1 " " $2] "(#" $4 ")"; } END { for (i in COMPARE) { printf i " :" COMPARE[i] "\n" } }' | sort -k1,1n -k2,2n | awk '{$1=$2=$3="";gsub(/[ ]*/,""); printf "%-12s:\n", $0;}'> table.$b.$n
+            cat $src | awk 'NF==4 && $1!="#" { COMPARE[$1 " " $2]=COMPARE[$1 " " $2] " " $3; if ($4!="-") COMPARE[$1 " " $2]=COMPARE[$1 " " $2] "(#" $4 ")"; } END { for (i in COMPARE) { print i " :" COMPARE[i] } }' | sort -k1,1n -k2,2n | awk '{$1=$2=$3="";gsub(/[ ]*/,""); printf "%-12s:\n", $0;}'> table.$b.$n
             sm=$(echo -e "$src (${submodes})" | sed 's/^sum\.conf.//;s!/out.summary[^ ]*!!')
             awk -v "s=${sm}" 'END { printf("%-12s:\n", s); }' < /dev/null >> table.$b.$n
             n=$(expr $n \+ 1)
