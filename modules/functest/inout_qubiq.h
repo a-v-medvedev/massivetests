@@ -18,7 +18,8 @@
 namespace functest {
 
 struct input_maker_qubiq : public input_maker {
-    input_maker_qubiq(test_scope<traits> &_scope) : input_maker(_scope) { 
+    input_maker_qubiq(test_scope<traits> &_scope) : input_maker(_scope) {
+        load_key = "-yaml"; 
     }
     virtual void make(int n, int ppn, std::string &input_yaml, std::string &psubmit_options, std::string &args) override {
         input_maker::make(n, ppn, input_yaml, psubmit_options, args);
