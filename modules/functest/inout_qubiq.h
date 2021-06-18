@@ -26,26 +26,10 @@ struct input_maker_qubiq : public input_maker {
         if (testitem.get_skip_flag(n, ppn)) {
             return;
         }
+        auto grid = scope.workload_sizes[0].first;
+        assert(grid.size() != 0);
+        args += std::string(" -grid ") + grid;
 /*        
-        auto matrix_name = scope.workload_sizes[0].first;
-        assert(matrix_name.size() != 0);
-        if (matrix_name[0] == '@') {
-            if (matrix_name.size() > 2 && matrix_name[1] == '@') {
-                args += std::string(" -generator_params");
-                args += std::string(" vsz=");
-                args += matrix_name.substr(2);
-                args += std::string(" -matrix ") + scope.workload_conf.first;
-            } else {
-                auto dim = helpers::str_split(matrix_name.substr(1), 'x');
-                args += std::string(" -matrix generate");
-                args += std::string(" -generator_params"); 
-                args += std::string(" case=cube:");
-                args += std::string("nx=") + dim[0] + ":" + std::string("ny=") + dim[1] + ":" +
-                        std::string("nz=") + dim[2];
-            }
-        } else {
-            args += std::string(" -matrix ") + matrix_name;
-        }
         args += std::string(" -logfile logfile.%PSUBMIT_JOBID%.log");
         args += std::string(" -test_iters ") + std::to_string(scope.workload_sizes[0].second);
         if (testitem.base.find("solver/iters") != testitem.base.end()) {
