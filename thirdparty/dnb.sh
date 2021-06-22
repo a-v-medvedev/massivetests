@@ -28,60 +28,8 @@ source $BSCRIPTSDIR/funcs.inc
 source $BSCRIPTSDIR/compchk.inc
 source $BSCRIPTSDIR/envchk.inc
 source $BSCRIPTSDIR/db.inc
+source $BSCRIPTSDIR/apps.inc
 
-function dnb_yaml-cpp() {
-    local pkg="yaml-cpp"
-    environment_check_specific "$pkg" || fatal "$pkg: environment check failed"
-    local m=$(get_field "$1" 2 "=")
-    local V=$(get_field "$2" 2 "=")
-    du_github "jbeder" "yaml-cpp" "yaml-cpp-" "$V" "$m"
-    local OPTS=""
-    OPTS="$OPTS -DYAML_BUILD_SHARED_LIBS=ON"
-    OPTS="$OPTS -DYAML_CPP_BUILD_TESTS=OFF"
-    OPTS="$OPTS -DYAML_CPP_BUILD_TOOLS=OFF"
-    OPTS="$OPTS -DYAML_CPP_BUILD_CONTRIB=OFF"
-    bi_cmake "$pkg" "$V" ".." "$OPTS" "$m"
-    i_make_binary_symlink "$pkg" "${V}" "$m"
-    return 0
-}
-
-function dnb_argsparser() {
-    local pkg="argsparser"
-    environment_check_specific "$pkg" || fatal "$pkg: environment check failed"
-    local m=$(get_field "$1" 2 "=")
-    local V=$(get_field "$2" 2 "=")
-    du_github "a-v-medvedev" "argsparser" "v" "$V" "$m"
-    if any_mode_is_set "bi" "$m"; then 
-        [ -f "$INSTALL_DIR/yaml-cpp.bin/include/yaml-cpp/yaml.h" ] || fatal "$pkg: installed yaml-cpp is required to build"
-    fi
-    local COMMANDS=""
-    PARAMS="YAML_DIR=$INSTALL_DIR/yaml-cpp.bin"
-    b_make "$pkg" "$V" "$COMMANDS" "clean" "$m"
-    b_make "$pkg" "$V" "$COMMANDS" "$PARAMS" "$m"
-    local FILES="argsparser/include/argsparser.h argsparser/libargsparser.so argsparser/libargsparser.a"
-    i_direct_copy "$pkg" "$V" "$FILES" "$m"
-    FILES="extensions"
-    i_direct_copy "$pkg" "$V" "$FILES" "$m"
-    i_make_binary_symlink "$pkg" "${V}" "$m"
-    return 0
-}
-
-function dnb_psubmit() {
-    local pkg="psubmit"
-    environment_check_specific "$pkg" || fatal "pkg: environment check failed"
-    local m=$(get_field "$1" 2 "=")
-    local V=$(get_field "$2" 2 "=")
-    du_github "a-v-medvedev" "psubmit" "v" "$V" "$m"
-    if this_mode_is_set "i" "$m"; then
-        local FILES=""
-        cd ${pkg}-${V}.src
-        FILES=$(ls -1 *.sh)
-        cd $INSTALL_DIR
-        i_direct_copy "$pkg" "$V" "$FILES" "$m"
-        i_make_binary_symlink "$pkg" "${V}" "$m"
-    fi
-    return 0
-}
 
 function dnb_mpi-benchmarks() {
     local pkg="mpi-benchmarks"
@@ -124,7 +72,7 @@ INJOB_INIT_COMMANDS='__INJOB_INIT_COMMANDS__'
 MPIEXEC=__MPI_SCRIPT__
 BATCH=__BATCH_SCRIPT__
 EOM
-		template_to_psubmitopts .
+		template_to_psubmitopts . ""
 		cd "$INSTALL_DIR"
 fi
 
@@ -133,7 +81,7 @@ fi
 ####
 
 PACKAGES="yaml-cpp argsparser mpi-benchmarks psubmit"
-VERSIONS="yaml-cpp:0.6.3 argsparser:0.0.10 mpi-benchmarks:HEAD psubmit:HEAD"
+VERSIONS="yaml-cpp:0.6.3 argsparser:HEAD mpi-benchmarks:HEAD psubmit:HEAD"
 TARGET_DIRS=""
 
 started=$(date "+%s")
