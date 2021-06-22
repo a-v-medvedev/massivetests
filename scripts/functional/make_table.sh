@@ -24,8 +24,8 @@ for b in $BENCHS; do
         n=1
         for src in sum.*/out.summary.$b; do  
             if [ -z "$made_base_out" ]; then
-                    cat $src | awk 'NF==4 && $1!="#" { print $1 " " $2 " \t:"}' > table.$b.0
-                    echo -e "# nnodes len \t:" >> table.$b.0
+                    cat $src | awk 'NF==4 && $1!="#" { printf "%-8s%-24s:\n", $1, $2 }' > table.$b.0
+                    echo -e "# nnodes workpart               :" >> table.$b.0
                     made_base_out=yes
             fi
             submodes=$(grep '^#' $src | sed 's/# //')
