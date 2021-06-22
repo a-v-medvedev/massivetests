@@ -50,8 +50,8 @@ traits::parse_and_make_parallel_confs(const args_parser &parser, const std::stri
     return helpers::parsers_vector_to_vector<int, int>(parser, name);
 }
 
-std::vector<traits::workload_size_t>
-traits::parse_and_make_workload_sizes(const args_parser &parser, const std::string &name) {
+std::vector<traits::workpart_t>
+traits::parse_and_make_workparts(const args_parser &parser, const std::string &name) {
     return helpers::parsers_map_to_vector<size_t, int>(parser, name);
 }
 
@@ -59,21 +59,21 @@ std::shared_ptr<test_scope<traits>>
 traits::make_scope(const traits::workload_conf_t &workload_conf,
                    const std::vector<traits::parallel_conf_t> &parallel_confs,
                    const std::vector<traits::target_parameter_t> &target_parameters,
-                   const std::vector<traits::workload_size_t> workload_sizes) {
+                   const std::vector<traits::workpart_t> workparts) {
     return std::make_shared<test_scope<imb_async::traits>>(workload_conf, 
                                                            parallel_confs, 
                                                            target_parameters,
-                                                           workload_sizes);
+                                                           workparts);
 }
 
 std::vector<std::shared_ptr<test_scope<traits>>>
 traits::make_scopes(const std::vector<traits::workload_conf_t> &workload_confs,
                     const std::vector<traits::parallel_conf_t> &parallel_confs,
                     const std::vector<traits::target_parameter_t> &target_parameters,
-                    const std::vector<traits::workload_size_t> workload_sizes) {
+                    const std::vector<traits::workpart_t> workparts) {
     std::vector<std::shared_ptr<test_scope<traits>>> vec;
     for (const auto &w : workload_confs) {
-        vec.push_back(make_scope(w, parallel_confs, target_parameters, workload_sizes));
+        vec.push_back(make_scope(w, parallel_confs, target_parameters, workparts));
     }
     return vec;
 }
@@ -90,7 +90,7 @@ std::shared_ptr<output_maker_base> traits::make_output_maker(test_scope<traits> 
 std::shared_ptr<result_t> traits::make_result(const workload_conf_t &wc,
                                               const parallel_conf_t &pc,
                                               const target_parameter_t &tp,
-                                              const workload_size_t &ws,
+                                              const workpart_t &ws,
                                               value_t value,
                                               const std::string &comment) {
     return std::make_shared<result<traits>>(wc, pc, tp, ws, value, comment);

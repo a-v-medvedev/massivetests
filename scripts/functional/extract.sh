@@ -93,7 +93,7 @@ for p in $PARAMS; do
     echo "---"
     for n in $MASSIVE_TESTS_NODES; do
         # FIXME add ppn handling
-        for size in $MASSIVE_TESTS_SIZES; do
+        for size in $MASSIVE_TESTS_WORKPARTS; do
             L=$(getline $DIR/output.yaml "$KEYWORDS" "$p" "$SIZEKEYWORD" "$n" "$size")
             V=$(get_value "$L") 
             D=$(get_dir "$L")

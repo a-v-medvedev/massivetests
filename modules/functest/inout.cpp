@@ -73,13 +73,13 @@ static const std::string status_to_string(status_t st) {
 
 input_maker::input_maker(test_scope<functest::traits> &_scope)
     : scope(_scope) {
-    assert(scope.workload_sizes.size() == 1);
+    assert(scope.workparts.size() == 1);
     const auto workload_conf = scope.workload_conf;
     std::string item;
     if (workload_conf.second == "X") {
-        item = workload_conf.first + "/" + scope.workload_sizes[0].first;
+        item = workload_conf.first + "/" + scope.workparts[0].first;
     } else {
-        item = workload_conf.first + "/" + workload_conf.second + "/" + scope.workload_sizes[0].first;
+        item = workload_conf.first + "/" + workload_conf.second + "/" + scope.workparts[0].first;
     }
 	testitem.load(item);
 }
@@ -108,7 +108,7 @@ void input_maker::write_out(const std::string &input_file_name) {
 */
 
 void input_maker::make(int n, int ppn, std::string &input_yaml, std::string &psubmit_options, std::string &args) {
-	assert(scope.workload_sizes.size() == 1);
+	assert(scope.workparts.size() == 1);
     if (testitem.get_skip_flag(n, ppn)) { 
         psubmit_options = "";
         args = "";
@@ -141,13 +141,13 @@ output_maker::output_maker(test_scope<functest::traits> &_scope, const std::stri
     : scope(_scope), outfile(_outfile) {
     out << YAML::BeginSeq;
     out << YAML::Flow;
-    assert(scope.workload_sizes.size() == 1);
+    assert(scope.workparts.size() == 1);
     const auto workload_conf = scope.workload_conf;
     std::string item;
     if (workload_conf.second == "X") {
-        item = workload_conf.first + "/" + scope.workload_sizes[0].first;
+        item = workload_conf.first + "/" + scope.workparts[0].first;
     } else {
-        item = workload_conf.first + "/" + workload_conf.second + "/" + scope.workload_sizes[0].first;
+        item = workload_conf.first + "/" + workload_conf.second + "/" + scope.workparts[0].first;
     }
     testitem.load(item);
 }
@@ -182,7 +182,7 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
     functest::traits traits;
     int n = -1, ppn = -1;
 	const auto wconf = scope.workload_conf;
-	const auto size = scope.workload_sizes[0];
+	const auto size = scope.workparts[0];
     using val_t = double;
     using vals_t = std::map<decltype(size), std::vector<std::pair<val_t, std::string>>>;
     std::map<std::string, vals_t> values;

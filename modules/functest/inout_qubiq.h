@@ -26,13 +26,13 @@ struct input_maker_qubiq : public input_maker {
         if (testitem.get_skip_flag(n, ppn)) {
             return;
         }
-        auto grid = scope.workload_sizes[0].first;
+        auto grid = scope.workparts[0].first;
         assert(grid.size() != 0);
         args += std::string(" -grid ") + grid;
         args += std::string(" -remove_out yes");
 /*        
         args += std::string(" -logfile logfile.%PSUBMIT_JOBID%.log");
-        args += std::string(" -test_iters ") + std::to_string(scope.workload_sizes[0].second);
+        args += std::string(" -test_iters ") + std::to_string(scope.workparts[0].second);
         if (testitem.base.find("solver/iters") != testitem.base.end()) {
             args += std::string(" -solver_params max_iters=") + std::to_string((int)testitem.base["solver/iters"]);
         }

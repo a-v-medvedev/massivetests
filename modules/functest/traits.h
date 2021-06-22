@@ -35,7 +35,7 @@ struct traits {
     using workload_conf_t = std::pair<std::string, std::string>;
     using parallel_conf_t = std::pair<int, int>;
     using target_parameter_t = std::pair<std::string, std::string>;
-    using workload_size_t = std::pair<std::string, int>;
+    using workpart_t = std::pair<std::string, int>;
     using value_t = std::string;
     static std::string application;
     std::vector<workload_conf_t> parse_and_make_workload_confs(const args_parser &parser,
@@ -44,25 +44,25 @@ struct traits {
                                                                      const std::string &name);
     std::vector<parallel_conf_t> parse_and_make_parallel_confs(const args_parser &parser,
                                                                const std::string &name);
-    std::vector<workload_size_t> parse_and_make_workload_sizes(const args_parser &parser,
+    std::vector<workpart_t> parse_and_make_workparts(const args_parser &parser,
                                                                const std::string &name);
     std::shared_ptr<test_scope<traits>>
     make_scope(const workload_conf_t &c,
                const std::vector<traits::parallel_conf_t> &parallel_confs,
                const std::vector<traits::target_parameter_t> &target_parameters,
-               const std::vector<traits::workload_size_t> workload_sizes);
+               const std::vector<traits::workpart_t> workparts);
 	std::vector<std::shared_ptr<test_scope<traits>>>
 	make_scopes(const std::vector<traits::workload_conf_t> &workload_confs,
                 const std::vector<traits::parallel_conf_t> &parallel_confs,
                 const std::vector<traits::target_parameter_t> &target_parameters,
-                const std::vector<traits::workload_size_t> workload_sizes);
+                const std::vector<traits::workpart_t> workparts);
     std::shared_ptr<input_maker_base> make_input_maker(test_scope<traits> &scope);
     std::shared_ptr<output_maker_base> make_output_maker(test_scope<traits> &scope,
                                                          const std::string &outfile);
     std::shared_ptr<result_t> make_result(const workload_conf_t &c, 
                                           const parallel_conf_t &pc, 
                                           const target_parameter_t &tp,
-                                          const workload_size_t &ws, 
+                                          const workpart_t &ws, 
                                           value_t status,
                                           const std::string &comment = "");
     static std::string workload_conf_to_string(const workload_conf_t &c) {
@@ -84,7 +84,7 @@ struct traits {
         ss << tp.first << "+" << tp.second;
         return ss.str();
     }
-    static std::string workload_size_to_string(const workload_size_t &ws) {
+    static std::string workpart_to_string(const workpart_t &ws) {
         if (ws.first == "")
             return "";
         std::stringstream ss;
@@ -107,10 +107,10 @@ struct traits {
         out << YAML::Key << YAML::Flow << "Section" << YAML::Value << tp.first;
         out << YAML::Key << YAML::Flow << "Parameter" << YAML::Value << tp.second;
     }
-    static void workload_size_to_yaml(const workload_size_t &ws, YAML::Emitter &out) {
+    static void workpart_to_yaml(const workpart_t &ws, YAML::Emitter &out) {
         if (ws.first == "")
             return;
-        out << YAML::Key << YAML::Flow << "Matrix" << YAML::Value << ws.first;
+        out << YAML::Key << YAML::Flow << "Workpart" << YAML::Value << ws.first;
         out << YAML::Key << YAML::Flow << "Iters" << YAML::Value << ws.second;
     }
 };

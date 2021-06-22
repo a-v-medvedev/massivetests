@@ -52,16 +52,16 @@ void input_maker::write_out(const std::string &input_file_name) {
     YAML_OUT("nwarmup", 10);
 
     // message sizes
-    YAML_OUT_SEQ("len", scope.workload_sizes, { return v.first; });
+    YAML_OUT_SEQ("len", scope.workparts, { return v.first; });
 
     // ncycles
-    YAML_OUT_SEQ("ncycles", scope.workload_sizes, { return v.second; });
+    YAML_OUT_SEQ("ncycles", scope.workparts, { return v.second; });
 
     // REQUIRES CALIBRATION: calctime set for calc "workloads"
     char *calctime = NULL;
     if ((calctime = getenv("MASSIVETEST_CALCTIME"))) {
         auto vcalctime = helpers::vstr_to_vint(helpers::str_split(std::string(calctime), ','));
-        assert(vcalctime.size() == scope.workload_sizes.size());
+        assert(vcalctime.size() == scope.workparts.size());
         YAML_OUT_SEQ("calctime", vcalctime, { return v; });
     }
 
@@ -157,7 +157,7 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
             if (!b[parameter])
                 continue;
             const auto &p = b[parameter].as<YAML::Node>();
-            for (auto &it : scope.workload_sizes) {
+            for (auto &it : scope.workparts) {
                 auto msglen = it.first;
                 if (!p[msglen])
                     continue;
@@ -184,7 +184,7 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
         std::cout << ">> imb-async: output: benchmark=" << benchmark << " parameter=" << parameter
                   << std::endl;
 #endif
-        for (auto &szs : scope.workload_sizes) {
+        for (auto &szs : scope.workparts) {
             auto msglen = szs.first;
             auto niter = szs.second;
             auto &v = vals[msglen];

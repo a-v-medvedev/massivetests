@@ -60,7 +60,7 @@ for b in $PAIRS; do
     echo "---"
     for n in $MASSIVE_TESTS_NODES; do
         # FIXME add ppn handling
-        for size in $MASSIVE_TESTS_SIZES; do
+        for size in $MASSIVE_TESTS_WORKPARTS; do
             L1=$(getline $FIRST/output.yaml "$KEYWORDS" "$first_key_block" "$SIZEKEYWORD" "$n" "$size")
             L2=$(getline $SECOND/output.yaml "$KEYWORDS" "$second_key_block" "$SIZEKEYWORD" "$n" "$size")
             V1=$(get_value "$L1") 

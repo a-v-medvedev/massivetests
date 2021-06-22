@@ -58,7 +58,7 @@ for mode in $MODES; do
         fi
     done
     NN=$(nelems "$MASSIVE_TESTS_NODES")
-    NS=$(nelems "$MASSIVE_TESTS_SIZES")
+    NS=$(nelems "$MASSIVE_TESTS_WORKPARTS")
     STEP=$(expr "$NN" \* "$NS" \+ 3)
     ./script-postproc.sh competing.$mode "$STEP" "$TUPLE_COMPETING"
 done
