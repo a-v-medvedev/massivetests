@@ -18,23 +18,57 @@
 #
 
 
-BENCHS="$1"
-for b in $BENCHS; do
-        made_base_out=""
-        n=1
-        for src in sum.*/out.summary.$b; do  
-            if [ -z "$made_base_out" ]; then
-                    cat $src | awk 'NF==4 && $1!="#" { printf "%-8s%-24s:\n", $1, $2 }' > table.$b.0
-                    echo -e "# nnodes workpart               :" >> table.$b.0
-                    made_base_out=yes
-            fi
-            submodes=$(grep '^#' $src | sed 's/# //')
-            cat $src | awk 'NF==4 && $1!="#" { COMPARE[$1 " " $2]=COMPARE[$1 " " $2] " " $3; if ($4!="-") COMPARE[$1 " " $2]=COMPARE[$1 " " $2] "(#" $4 ")"; } END { for (i in COMPARE) { print i " :" COMPARE[i] } }' | sort -k1,1n -k2,2n | awk '{$1=$2=$3="";gsub(/[ ]*/,""); printf "%-12s:\n", $0;}'> table.$b.$n
-            sm=$(echo -e "$src (${submodes})" | sed 's/^sum\.conf.//;s!/out.summary[^ ]*!!')
-            awk -v "s=${sm}" 'END { printf("%-12s:\n", s); }' < /dev/null >> table.$b.$n
-            n=$(expr $n \+ 1)
-        done
-        paste -d ' ' table.$b.* > table.$b
-        rm table.$b.*
+function parse_summary() {
+    local summary="$1"
+    local table="$2"
+    local submodes="$3"
+    cat > .parse.awk <<EOF
+        BEGIN {
+            S=P=F=N=TACE=0
+        }
+        NF==4 && \$1!="#" { 
+            RESULT[\$1 " " \$2]=RESULT[\$1 " " \$2] " " \$3; 
+            if (\$4!="-") 
+                RESULT[\$1 " " \$2]=RESULT[\$1 " " \$2] "(#" \$4 ")"; 
+            if (\$3 == "S") S++;
+            if (\$3 == "P") P++;
+            if (\$3 == "F") F++;
+            if (\$3 == "N") N++;
+            if (\$3 == "T" || \$3 == "A" || \$3 == "C" || \$3 == "E") TACE++;
+        } 
+        END { 
+            for (i in RESULT) { 
+                print i " :" RESULT[i] 
+            } 
+            print S " " P " " F " " N " " TACE >> ".stats.txt"
+        }
+EOF
+    awk -f .parse.awk "$summary" > .table.txt
+    cat .table.txt | sort -k1,1n -k2,2n | awk '{$1=$2=$3="";gsub(/[ ]*/,""); printf "%-12s:\n", $0;}' > "$table"
+    awk -v "s=$submodes" 'END { printf("%-12s:\n", s); }' >> "$table" < /dev/null
+    rm -f .parse.awk .table.txt
+}
+
+WORKLOADS="$1"
+for wld in $WORKLOADS; do
+    cat /dev/null > .stats.txt
+    made_first_column=""
+    n=1
+    for src in sum.*/out.summary.$wld; do  
+        if [ -z "$made_first_column" ]; then
+            cat $src | awk 'NF==4 && $1!="#" { printf "%-8s%-24s:\n", $1, $2 }' > table.$wld.0
+            echo -e "# nnodes workpart               :" >> table.$wld.0
+            made_first_column="yes"
+        fi
+        submodes=$(grep '^#' $src | sed 's/# //')
+        sm=$(echo -e "$src (${submodes})" | sed 's/^sum\.conf.//;s!/out.summary[^ ]*!!')
+        parse_summary "$src" "table.$wld.$n" "$sm"
+        n=$(expr $n \+ 1)
+    done
+    paste -d ' ' table.$wld.* > table.$wld
+    rm table.$wld.*
 done
+cat .stats.txt | awk '{ for (i=1; i<=NF; i++) SUM[i]+=$i; N=NF; } END { print "S=" SUM[1] " P=" SUM[2] " F=" SUM[3] " N=" SUM[4] " TACE=" SUM[5]; }' > stats.txt
+rm .stats.txt
+
 
