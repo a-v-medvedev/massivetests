@@ -57,5 +57,6 @@ done
 ./make_table.sh "$TUPLE" || exit 1 && true
 
 touch references.txt
-cp stats.txt references.txt table.* test_items.yaml input_*.yaml summary/ || exit 1 && true
+cp -f stats.txt references.txt table.* test_items*yaml input_*.yaml summary/ || exit 1 && true
+
 
