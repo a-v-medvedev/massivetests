@@ -49,9 +49,9 @@ EOF
     rm -f .parse.awk .table.txt
 }
 
+cat /dev/null > .stats.txt
 WORKLOADS="$1"
 for wld in $WORKLOADS; do
-    cat /dev/null > .stats.txt
     made_first_column=""
     n=1
     for src in sum.*/out.summary.$wld; do  
