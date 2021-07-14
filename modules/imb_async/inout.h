@@ -27,21 +27,23 @@
 
 namespace imb_async {
 
-struct input_maker : public input_maker_base {
+template <typename parallel_conf_t>
+struct input_maker : public input_maker_base<parallel_conf_t> {
     bool was_written;
     test_scope<traits> &scope;
     input_maker(test_scope<traits> &_scope);
     void write_out(const std::string &input_file_name);
-    virtual void make(int n, int ppn, std::string &input_yaml, std::string &psubmit_options, std::string &args);
+    virtual void make(const parallel_conf_t &pconf, execution_environment &env) override;
 };
 
-struct output_maker : public output_maker_base {
+template <typename parallel_conf_t>
+struct output_maker : public output_maker_base<parallel_conf_t> {
     test_scope<traits> scope;
     YAML::Emitter out;
     std::string outfile;
     output_maker(test_scope<traits> &_scope, const std::string &_outfile);
     ~output_maker();
-    virtual void make(std::vector<std::shared_ptr<process>> &attempts);
+    virtual void make(std::vector<std::shared_ptr<process<parallel_conf_t>>> &attempts);
 };
 
 } // namespace imb_async

@@ -34,7 +34,7 @@ struct test_item_t {
     protected:
 	std::map<std::string, std::map<std::pair<int, int>, double>> tolerance_variations;
 	std::map<std::pair<int, int>, unsigned> timeout_variations;
-	std::map<std::pair<int, int>, bool> skip_flag_variations;
+    std::map<std::string, std::map<std::pair<int, int>, bool>> skip_flag_variations;
     bool skip = false;
     unsigned timeout = 15;  // FIXME make it a cmdline param
     double tolerance = 1e-8; // FIXME make it a cmdline param
@@ -84,6 +84,7 @@ struct test_item_t {
 				timeout_variations[id] = val;
 			}
 		}
+        /*
         if (have_skip_key)
 		{
 			const auto skip_flag_dict = cp["skip"].as<YAML::Node>();
@@ -104,7 +105,9 @@ struct test_item_t {
 				skip_flag_variations[id] = val;
 			}
 		}
+        */
 	}
+
 	void load_tolerance_from_common_params(YAML::Node &stream, const std::string &param) {
 		if (!stream["common_params"]) 
 			return;
@@ -115,25 +118,52 @@ struct test_item_t {
 		if (!dict[param])
 			return;
 		const auto &tolerance_dict = dict[param].as<YAML::Node>();
-		{
-			double default_tolerance = tolerance;
-			if (tolerance_dict["default"]) {
-				default_tolerance = tolerance_dict["default"].as<double>();
-			}
-			std::pair<int, int> zero{0, 0};
-			tolerance_variations[param][zero] = default_tolerance;
-			for (YAML::const_iterator it = tolerance_dict.begin(); it != tolerance_dict.end(); ++it) {
-				const auto& key = it->first.as<std::string>();
-				bool val = it->second.as<double>();
-				if (key == "default")
-					continue;
-				std::pair<int, int> id;
-				if (!get_int_pair_from_string(key, id))
-					continue;            
-				tolerance_variations[param][id] = val;
-			}
-		}
+        double default_tolerance = tolerance;
+        if (tolerance_dict["default"]) {
+            default_tolerance = tolerance_dict["default"].as<double>();
+        }
+        std::pair<int, int> zero{0, 0};
+        tolerance_variations[param][zero] = default_tolerance;
+        for (YAML::const_iterator it = tolerance_dict.begin(); it != tolerance_dict.end(); ++it) {
+            const auto& key = it->first.as<std::string>();
+            bool val = it->second.as<double>();
+            if (key == "default")
+                continue;
+            std::pair<int, int> id;
+            if (!get_int_pair_from_string(key, id))
+                continue;            
+            tolerance_variations[param][id] = val;
+        }
 	}
+
+    void load_skip_flag_from_common_params(YAML::Node &stream, const std::string &param) {
+		if (!stream["common_params"]) 
+			return;
+		if (!(stream["common_params"]).as<YAML::Node>()["skip"]) 
+			return;
+        const auto &cp = stream["common_params"].as<YAML::Node>();
+		const auto &dict = cp["skip"].as<YAML::Node>();
+		if (!dict[param])
+			return;
+		const auto &skip_dict = dict[param].as<YAML::Node>();
+        double default_skip = false;
+        if (skip_dict["default"]) {
+            default_skip = skip_dict["default"].as<double>();
+        }
+        std::pair<int, int> zero{0, 0};
+        skip_flag_variations[param][zero] = false;
+        for (YAML::const_iterator it = skip_dict.begin(); it != skip_dict.end(); ++it) {
+            const auto& key = it->first.as<std::string>();
+            bool val = it->second.as<double>();
+            if (key == "default")
+                continue;
+            std::pair<int, int> id;
+            if (!get_int_pair_from_string(key, id))
+                continue;            
+            skip_flag_variations[param][id] = val;
+        }
+	}
+
 	double get_tolerance(const std::string &param, int n, int ppn = 1) {
 		double default_tolerance = tolerance;
 		std::pair<int, int> zero(0, 0);
@@ -149,6 +179,7 @@ struct test_item_t {
 		}
 		return default_tolerance;
 	}
+
     unsigned get_timeout(int n, int ppn = 1) {
         unsigned default_timeout = timeout;
         std::pair<int, int> zero(0, 0);
@@ -161,6 +192,7 @@ struct test_item_t {
 		}
 		return default_timeout;
     }
+
     unsigned get_skip_flag(int n, int ppn = 1) {
         unsigned default_skip_flag = skip;
         std::pair<int, int> zero(0, 0);
@@ -212,6 +244,7 @@ struct test_item_t {
 			const auto &param = it->first.as<std::string>();
             base[param] = it->second.as<double>();
 			load_tolerance_from_common_params(stream, param);
+            load_skip_flag_from_common_params(stream, param);
         }
 		load_simple_common_params(stream);
     }
@@ -240,7 +273,8 @@ struct test_item_t {
     }
 };
 
-struct input_maker : public input_maker_base {
+template <typename parallel_conf_t>
+struct input_maker : public input_maker_base<parallel_conf_t> {
     std::string load_key = "-load";
     std::string result_key = "-result";
     std::string conf_key = "";
@@ -248,17 +282,18 @@ struct input_maker : public input_maker_base {
     test_item_t testitem;
     test_scope<traits> &scope;
     input_maker(test_scope<traits> &_scope);
-    virtual void make(int n, int ppn, std::string &input_yaml, std::string &psubmit_options, std::string &args);
+    virtual void make(const parallel_conf_t &pconf, execution_environment &env);
 };
 
-struct output_maker : public output_maker_base {
+template <typename parallel_conf_t>
+struct output_maker : public output_maker_base<parallel_conf_t> {
     test_item_t testitem;
     test_scope<traits> &scope;
     YAML::Emitter out;
     std::string outfile;
     output_maker(test_scope<traits> &_scope, const std::string &_outfile);
     ~output_maker();
-    virtual void make(std::vector<std::shared_ptr<process>> &attempts);
+    virtual void make(std::vector<std::shared_ptr<process<parallel_conf_t>>> &attempts);
 };
 
 } // namespace functest

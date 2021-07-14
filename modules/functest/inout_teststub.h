@@ -17,20 +17,22 @@
 
 namespace functest {
 
-struct input_maker_teststub : public input_maker {
-    input_maker_teststub(test_scope<traits> &_scope) : input_maker(_scope) {
-        input_maker::result_key = "-output";
+template <typename parallel_conf_t>
+struct input_maker_teststub : public input_maker<parallel_conf_t> {
+    input_maker_teststub(test_scope<traits> &_scope) : input_maker<parallel_conf_t>(_scope) {
+        input_maker<parallel_conf_t>::result_key = "-output";
     }
-    virtual void make(int n, int ppn, std::string &input_yaml, std::string &psubmit_options, std::string &args) override {
-        input_maker::make(n, ppn, input_yaml, psubmit_options, args);
+    virtual void make(const parallel_conf_t &pconf, execution_environment &env) override {
+        input_maker<parallel_conf_t>::make(pconf, env);
     }
 };
 
-struct output_maker_teststub : public output_maker {
+template <typename parallel_conf_t>
+struct output_maker_teststub : public output_maker<parallel_conf_t> {
     output_maker_teststub(test_scope<traits> &_scope, const std::string &_outfile) 
-        : output_maker(_scope, _outfile) {}
-    virtual void make(std::vector<std::shared_ptr<process>> &attempts) override {
-        output_maker::make(attempts);
+        : output_maker<parallel_conf_t>(_scope, _outfile) {}
+    virtual void make(std::vector<std::shared_ptr<process<parallel_conf_t>>> &attempts) override {
+        output_maker<parallel_conf_t>::make(attempts);
     }
 };
 

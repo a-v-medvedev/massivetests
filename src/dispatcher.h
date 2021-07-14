@@ -44,9 +44,10 @@ struct dispatcher {
     const std::vector<std::string> possible_states{"NONE", "Q", "E", "R", "DONE", "FINISHED"};
     using workload_conf_t = typename TRAITS::workload_conf_t;
     using parallel_conf_t = typename TRAITS::parallel_conf_t;
-    std::vector<std::shared_ptr<process>> waiting_processes;
-    std::vector<std::shared_ptr<process>> processes;
-    std::map<std::tuple<int, workload_conf_t, parallel_conf_t>, std::vector<std::shared_ptr<process>>> attempts;
+    std::vector<std::shared_ptr<process<parallel_conf_t>>> waiting_processes;
+    std::vector<std::shared_ptr<process<parallel_conf_t>>> processes;
+    std::map<std::tuple<int, workload_conf_t, parallel_conf_t>, 
+             std::vector<std::shared_ptr<process<parallel_conf_t>>>> attempts;
     size_t nattempts;
     size_t nqueued;
     uint64_t oldcs = 0;
@@ -54,11 +55,11 @@ struct dispatcher {
     dispatcher(int _nattempts, int _nqueued) : nattempts(_nattempts), nqueued(_nqueued) {}
 
     void enqueue(int scope_id, workload_conf_t wconf, parallel_conf_t pconf, 
-                 std::shared_ptr<input_maker_base> im,
-                 std::shared_ptr<output_maker_base> om) {
+                 std::shared_ptr<input_maker_base<parallel_conf_t>> im,
+                 std::shared_ptr<output_maker_base<parallel_conf_t>> om) {
         auto conf = std::make_tuple(scope_id, wconf, pconf);
         auto &already_submitted = attempts[conf];
-        std::shared_ptr<process> proc(std::make_shared<process>(pconf, im, om));
+        std::shared_ptr<process<parallel_conf_t>> proc(std::make_shared<process<parallel_conf_t>>(pconf, im, om));
         already_submitted.push_back(proc);
         waiting_processes.push_back(proc);
         start_more_processes();
@@ -74,15 +75,36 @@ struct dispatcher {
             ((finished || done) && (queued < 2) && (processes.size() - finished < 2 * nqueued))) {
             if (waiting_processes.size() == 0)
                 break;
-            std::shared_ptr<process> proc = waiting_processes[0];
-            std::string input_yaml, psubmit_options, args;
-            proc->im->make(proc->n, proc->ppn, input_yaml, psubmit_options, args);
+            std::shared_ptr<process<typename TRAITS::parallel_conf_t>> proc = waiting_processes[0];
+            execution_environment env;
+            proc->im->make(proc->pconf, env);
+            if (env.holdover) {
+                proc->env = env;
+                waiting_processes.erase(waiting_processes.begin());
+                waiting_processes.push_back(proc);
+                size_t q = 0;
+                for (const auto &p : waiting_processes) {
+                    if (p->env.holdover) {
+                        q++;
+                    }
+                }
+                if (q == waiting_processes.size()) {
+                    for (const auto &p : waiting_processes) {
+                        auto &e = p->env;
+                        e.holdover = false;
+                        e.skip = true;
+                        p->start(e);
+                    }
+                    waiting_processes.erase(waiting_processes.begin(), waiting_processes.end());
+                    while (!check_if_all_finished()) { ; }
+                    break;
+                }
+            }
 #if DEBUG  // FIXME consider making this output a command-line switchable option
-            std::cout << ">> dispatcher: start: {" << proc->n << "," << proc->ppn
-                      << "} input=" << input_yaml << " run.options=" << psubmit_options << " args={"
-                      << args << "} }" << std::endl;
+            std::cout << ">> dispatcher: start: {" << TRAITS::parallel_conf_to_string(proc->pconf) << "} "
+                      << env.to_string() << std::endl; 
 #endif
-            proc->start(input_yaml, psubmit_options, args);
+            proc->start(env);
             processes.push_back(proc);
             waiting_processes.erase(waiting_processes.begin());
             if (check_if_all_finished())
@@ -154,7 +176,7 @@ struct dispatcher {
                 auto &pconf = std::get<2>(conf);
                 std::cout << ">> dispatcher: " << nattempts << " attempts for: {"
                           << wconf.first << "," << wconf.second << "} in parallel conf: {"
-                          << pconf.first << "," << pconf.second
+                          << TRAITS::parallel_conf_to_string(pconf)
                           << "} finished, procssing output" << std::endl;
 #endif
                 procs[0]->om->make(procs);

@@ -17,34 +17,33 @@
 
 namespace functest {
 
-struct input_maker_qubiq : public input_maker {
-    input_maker_qubiq(test_scope<traits> &_scope) : input_maker(_scope) {
-        load_key = "-yaml"; 
+template <typename parallel_conf_t>
+struct input_maker_qubiq : public input_maker<parallel_conf_t> {
+    using input_maker<parallel_conf_t>::testitem;
+    using input_maker<parallel_conf_t>::scope;
+    input_maker_qubiq(test_scope<traits> &_scope) : input_maker<parallel_conf_t>(_scope) {
+        input_maker<parallel_conf_t>::load_key = "-yaml"; 
     }
-    virtual void make(int n, int ppn, std::string &input_yaml, std::string &psubmit_options, std::string &args) override {
-        input_maker::make(n, ppn, input_yaml, psubmit_options, args);
-        if (testitem.get_skip_flag(n, ppn)) {
+    virtual void make(const parallel_conf_t &pconf, execution_environment &env) override {
+        input_maker<parallel_conf_t>::make(pconf, env);
+        if (testitem.get_skip_flag(pconf.first, pconf.second)) {
+            env.skip = true;
             return;
         }
         auto grid = scope.workparts[0].first;
         assert(grid.size() != 0);
-        args += std::string(" -grid ") + grid;
-        args += std::string(" -remove_out yes");
-/*        
-        args += std::string(" -logfile logfile.%PSUBMIT_JOBID%.log");
-        args += std::string(" -test_iters ") + std::to_string(scope.workparts[0].second);
-        if (testitem.base.find("solver/iters") != testitem.base.end()) {
-            args += std::string(" -solver_params max_iters=") + std::to_string((int)testitem.base["solver/iters"]);
-        }
-*/
+        env.cmdline_args += std::string(" -grid ") + grid;
+        env.cmdline_args += std::string(" -remove_decomp yes");
+        env.cmdline_args += std::string(" -output_dir out.%PSUBMIT_JOBID%");
     }
 };
 
-struct output_maker_qubiq : public output_maker {
+template <typename parallel_conf_t>
+struct output_maker_qubiq : public output_maker<parallel_conf_t> {
     output_maker_qubiq(test_scope<traits> &_scope, const std::string &_outfile) 
-        : output_maker(_scope, _outfile) {}
-    virtual void make(std::vector<std::shared_ptr<process>> &attempts) override {
-        output_maker::make(attempts);
+        : output_maker<parallel_conf_t>(_scope, _outfile) {}
+    virtual void make(std::vector<std::shared_ptr<process<parallel_conf_t>>> &attempts) override {
+        output_maker<parallel_conf_t>::make(attempts);
     }
 };
 

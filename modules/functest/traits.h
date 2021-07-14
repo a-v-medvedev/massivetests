@@ -56,8 +56,8 @@ struct traits {
                 const std::vector<traits::parallel_conf_t> &parallel_confs,
                 const std::vector<traits::target_parameter_t> &target_parameters,
                 const std::vector<traits::workpart_t> workparts);
-    std::shared_ptr<input_maker_base> make_input_maker(test_scope<traits> &scope);
-    std::shared_ptr<output_maker_base> make_output_maker(test_scope<traits> &scope,
+    std::shared_ptr<input_maker_base<parallel_conf_t>> make_input_maker(test_scope<traits> &scope);
+    std::shared_ptr<output_maker_base<parallel_conf_t>> make_output_maker(test_scope<traits> &scope,
                                                          const std::string &outfile);
     std::shared_ptr<result_t> make_result(const workload_conf_t &c, 
                                           const parallel_conf_t &pc, 
@@ -69,26 +69,26 @@ struct traits {
         if (c.first == "" && c.second == "")
             return "";
         std::stringstream ss;
-        ss << c.first << "+" << c.second;
+        ss << c.first << "/" << c.second;
         return ss.str();
     }
     static std::string parallel_conf_to_string(const parallel_conf_t &c) {
         std::stringstream ss;
-        ss << c.first << "+" << c.second;
+        ss << c.first << "/" << c.second;
         return ss.str();
     }
     static std::string target_parameter_to_string(const target_parameter_t &tp) {
         if (tp.first == "" && tp.second == "")
             return "";
         std::stringstream ss;
-        ss << tp.first << "+" << tp.second;
+        ss << tp.first << "/" << tp.second;
         return ss.str();
     }
     static std::string workpart_to_string(const workpart_t &ws) {
         if (ws.first == "")
             return "";
         std::stringstream ss;
-        ss << ws.first << "+" << ws.second;
+        ss << ws.first << "/" << ws.second;
         return ss.str();
     }
     static void workload_conf_to_yaml(const workload_conf_t &c, YAML::Emitter &out) {

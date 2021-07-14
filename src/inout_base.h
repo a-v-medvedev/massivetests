@@ -17,14 +17,19 @@
 
 #pragma once
 
+template <typename parallel_conf_t>
 class process;
 
+class execution_environment;
+
+template <typename parallel_conf_t>
 struct input_maker_base {
-    virtual void make(int n, int ppn, std::string &input_yaml, std::string &psubmit_options, std::string &args) = 0;
+    virtual void make(const parallel_conf_t &pconf, execution_environment &env) = 0;
     virtual ~input_maker_base() {}
 };
 
+template <typename parallel_conf_t>
 struct output_maker_base {
-    virtual void make(std::vector<std::shared_ptr<process>> &attempts) = 0;
+    virtual void make(std::vector<std::shared_ptr<process<parallel_conf_t>>> &attempts) = 0;
     virtual ~output_maker_base() {}
 };

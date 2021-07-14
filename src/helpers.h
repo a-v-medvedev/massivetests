@@ -163,7 +163,7 @@ static inline void yaml_out_seq(YAML::Emitter &out, const std::string &key, cons
 #define YAML_OUT_SEQ(KEY, VALS, FUNCBODY)                                                          \
     {                                                                                              \
         using CONTAINER = decltype(VALS);                                                          \
-        using ELEM_TYPE = CONTAINER::value_type;                                                   \
+        using ELEM_TYPE = typename CONTAINER::value_type;                                                   \
         const auto &fn = [](ELEM_TYPE v) FUNCBODY;                                                 \
         helpers::yaml_out_seq<CONTAINER, ELEM_TYPE>(out, KEY, VALS, fn);                           \
     }
@@ -171,7 +171,7 @@ static inline void yaml_out_seq(YAML::Emitter &out, const std::string &key, cons
 #define YAML_OUT_SEQ_NESTED(KEY, VALS, FUNCBODY)                                                   \
     {                                                                                              \
         using CONTAINER = decltype(VALS);                                                          \
-        using ELEM_TYPE = CONTAINER::value_type;                                                   \
+        using ELEM_TYPE = typename CONTAINER::value_type;                                                   \
         const auto &fn = [](ELEM_TYPE v) FUNCBODY;                                                 \
         helpers::yaml_out_seq<CONTAINER, ELEM_TYPE>(out, KEY, VALS, fn, 2);                        \
     }

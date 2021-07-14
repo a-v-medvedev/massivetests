@@ -55,8 +55,8 @@ struct traits {
                 const std::vector<traits::parallel_conf_t> &parallel_confs,
                 const std::vector<traits::target_parameter_t> &target_parameters,
                 const std::vector<traits::workpart_t> workparts);
-    std::shared_ptr<input_maker_base> make_input_maker(test_scope<traits> &scope);
-    std::shared_ptr<output_maker_base> make_output_maker(test_scope<traits> &scope,
+    std::shared_ptr<input_maker_base<parallel_conf_t>> make_input_maker(test_scope<traits> &scope);
+    std::shared_ptr<output_maker_base<parallel_conf_t>> make_output_maker(test_scope<traits> &scope,
                                                          const std::string &outfile);
     std::shared_ptr<result_t> make_result(const workload_conf_t &c,
                                           const parallel_conf_t &pc, 

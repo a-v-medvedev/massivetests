@@ -34,10 +34,12 @@
 
 namespace imb_async {
 
-input_maker::input_maker(test_scope<imb_async::traits> &_scope)
+template <typename parallel_conf_t>
+input_maker<parallel_conf_t>::input_maker(test_scope<imb_async::traits> &_scope)
     : was_written(false), scope(_scope) {}
 
-void input_maker::write_out(const std::string &input_file_name) {
+template <typename parallel_conf_t>
+void input_maker<parallel_conf_t>::write_out(const std::string &input_file_name) {
     if (was_written)
         return;
     std::ofstream ofs(input_file_name);
@@ -85,35 +87,39 @@ void input_maker::write_out(const std::string &input_file_name) {
     was_written = true;
 }
 
-void input_maker::make(int n, int ppn, std::string &input_yaml, std::string &psubmit_options, std::string &args) {
-    (void)n;
-    (void)ppn;
-    input_yaml = "./input_" + std::to_string(scope.id) + ".yaml";
-    psubmit_options = "./psubmit.opt";
-    args = "-load " + input_yaml + " -output " + " benchmark.%PSUBMIT_JOBID%.yaml";
+template <typename parallel_conf_t>
+void input_maker<parallel_conf_t>::make(const parallel_conf_t &pconf, execution_environment &env) {
+    (void)pconf;
+    env.input_yaml = "./input_" + std::to_string(scope.id) + ".yaml";
+    env.psubmit_options = "./psubmit.opt";
+    env.cmdline_args = "-load " + env.input_yaml + " -output " + " benchmark.%PSUBMIT_JOBID%.yaml";
     char *aux_opts;
     if ((aux_opts = getenv("MASSIVETEST_AUX_ARGS"))) {
-        args += " " + std::string(aux_opts);
+        env.cmdline_args += " " + std::string(aux_opts);
     }
-    write_out(input_yaml);
+    write_out(env.input_yaml);
 }
 
-output_maker::output_maker(test_scope<imb_async::traits> &_scope, const std::string &_outfile)
+template <typename parallel_conf_t>
+output_maker<parallel_conf_t>::output_maker(test_scope<imb_async::traits> &_scope, const std::string &_outfile)
     : scope(_scope), outfile(_outfile) {
     out << YAML::BeginSeq;
     out << YAML::Flow;
 }
 
-output_maker::~output_maker() {
+template <typename parallel_conf_t>
+output_maker<parallel_conf_t>::~output_maker() {
     out << YAML::EndSeq;
     out << YAML::Newline;
     std::ofstream ofs(outfile, std::ios_base::out | std::ios_base::ate | std::ios_base::app);
     ofs << out.c_str();
 }
 
-void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
+template <typename parallel_conf_t>
+void output_maker<parallel_conf_t>::make(std::vector<std::shared_ptr<process<parallel_conf_t>>> &attempts) {
     imb_async::traits traits;
-    int n = -1, ppn = -1;
+    //int n = -1, ppn = -1;
+    parallel_conf_t pconf;
     const auto wconf = scope.workload_conf;
     using val_t = double;
     using vals_t = std::map<int, std::vector<val_t>>;
@@ -125,12 +131,7 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
             std::cout << proc->full_output << std::endl;
             return;
         }
-        if (n == -1)
-            n = proc->n;
-        if (ppn == -1)
-            ppn = proc->ppn;
-        assert(n == proc->n);
-        assert(ppn == proc->ppn);
+        pconf = proc->pconf;
         std::string infile =
             "results." + std::to_string(j) + "/benchmark." + std::to_string(j) + ".yaml";
         std::ifstream in;
@@ -203,7 +204,7 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
                 result_val = helpers::average(v);
             }
             auto r =
-                traits.make_result(wconf, {n, ppn}, {benchmark, parameter}, {msglen, niter}, result_val);
+                traits.make_result(wconf, pconf, {benchmark, parameter}, {msglen, niter}, result_val);
             r->to_yaml(out);
 #ifdef DEBUG
             std::cout << ">> imb-async: output: result written: " << r->get_index() << std::endl;
@@ -211,8 +212,11 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
             nresults++;
         }
     }
-    std::cout << "OUTPUT: imb-async: {" << n << "," << ppn << "} " << nresults
+    std::cout << "OUTPUT: imb-async: {" << pconf.first << "," << pconf.second << "} " << nresults
               << " resulting items registered" << std::endl;
 }
+
+template class input_maker<imb_async::traits::parallel_conf_t>;
+template class output_maker<imb_async::traits::parallel_conf_t>;
 
 } // namespace imb_async

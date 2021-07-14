@@ -28,10 +28,63 @@
 #include <sys/wait.h>
 #include <assert.h>
 
+struct execution_environment {
+    std::string input_yaml;
+    std::string psubmit_options;
+    std::string cmdline_args;
+    bool skip;
+    bool holdover;
+    std::string holdover_reason;
+    std::string executable; //= "psubmit.sh";
+    execution_environment() : skip(false), holdover(false), executable("psubmit.sh") {}
+    template <typename parallel_conf_t> 
+    void exec(const parallel_conf_t &pconf) {
+        std::cout << "execlp: " << executable << " " << executable << " "
+                  << "-n"
+                  << " " << std::to_string(pconf.first) << " "
+                  << "-p"
+                  << " " << std::to_string(pconf.second) << " "
+                  << "-o"
+                  << " " << psubmit_options << " "
+                  << "-a"
+                  << " " << cmdline_args << std::endl;
+        execlp(executable.c_str(), executable.c_str(), 
+                "-n", std::to_string(pconf.first).c_str(), 
+                "-p", std::to_string(pconf.second).c_str(), 
+                "-o", psubmit_options.c_str(), 
+                "-a", cmdline_args.c_str(),
+                (char *)nullptr);
+    }
+    std::string to_string() {
+        std::stringstream ss;
+        ss << "input=" << input_yaml << " " <<
+              "psubmit_options=" << psubmit_options << " " <<
+              "args={" << cmdline_args << "}";
+        return ss.str();
+    }
+    void parse_line(const std::string &line_from_child, std::string &state, int &jobid) {
+        {
+            char a1[128], a2[128], a3[128];
+            int n = sscanf(line_from_child.c_str(), "%s %s %s\n", a1, a2, a3);
+            if (n == 3 && !strcmp(a1, "Job") && !strcmp(a2, "status:"))
+                state = a3;
+        }
+
+        {
+            char a1[128], a2[128];
+            int a3;
+            int n = sscanf(line_from_child.c_str(), "%s %s %d\n", a1, a2, &a3);
+            if (n == 3 && !strcmp(a1, "Job") && !strcmp(a2, "ID")) {
+                jobid = a3;
+            }
+        }
+    }
+};
+
+template <typename parallel_conf_t>
 struct process {
-    const std::string executable = "psubmit.sh";
-    using parallel_size_t = std::pair<int, int>;
-    int n, ppn;
+    parallel_conf_t pconf;
+    execution_environment env;
     pid_t pid = 0;
     int jobid = -1;
     int retval = 0;
@@ -39,41 +92,30 @@ struct process {
     std::string state = "NONE";
     int pipe_fd[2];
     FILE *outfp = nullptr;
-    std::shared_ptr<input_maker_base> im;
-    std::shared_ptr<output_maker_base> om;
+    std::shared_ptr<input_maker_base<parallel_conf_t>> im;
+    std::shared_ptr<output_maker_base<parallel_conf_t>> om;
     std::string full_output;
 
-    process(parallel_size_t s, std::shared_ptr<input_maker_base> _input_maker,
-            std::shared_ptr<output_maker_base> _output_maker)
-        : n(s.first), ppn(s.second), im(_input_maker), om(_output_maker) {}
+    process(parallel_conf_t _pconf, std::shared_ptr<input_maker_base<parallel_conf_t>> _input_maker,
+            std::shared_ptr<output_maker_base<parallel_conf_t>> _output_maker)
+        : pconf(_pconf), im(_input_maker), om(_output_maker) {}
 
-    void start(const std::string &input_yaml, const std::string &psubmit_options,
-               const std::string &args) {
-        if (psubmit_options == "" && args == "") {
+    void start(const execution_environment &_env) {
+        env = _env;
+        if (env.skip) {
             state = "FINISHED";
             pid = 0;
             skipped = true;
             return;
         }
-        (void)input_yaml;
+        assert(!env.holdover);
         pipe(pipe_fd);
         pid = fork();
         if (pid == 0) { // Child
             close(pipe_fd[0]);
             dup2(pipe_fd[1], STDOUT_FILENO);
             dup2(pipe_fd[1], STDERR_FILENO);
-            std::cout << "execlp: " << executable << " " << executable << " "
-                      << "-n"
-                      << " " << std::to_string(n) << " "
-                      << "-p"
-                      << " " << std::to_string(ppn) << " "
-                      << "-o"
-                      << " " << psubmit_options << " "
-                      << "-a"
-                      << " " << args << std::endl;
-            execlp(executable.c_str(), executable.c_str(), "-n", std::to_string(n).c_str(), "-p",
-                   std::to_string(ppn).c_str(), "-o", psubmit_options.c_str(), "-a", args.c_str(),
-                   (char *)NULL);
+            env.exec<parallel_conf_t>(pconf);
             std::cout << "execlp failed! " << strerror(errno) << std::endl;
             exit(1);
         }
@@ -105,22 +147,7 @@ struct process {
 #ifdef DEBUG  // FIXME consider making this output a command-line switchable option
         std::cout << pid << ": " << s; // no endline, it is already there
 #endif
-
-        {
-            char a1[128], a2[128], a3[128];
-            int n = sscanf(line_from_child, "%s %s %s\n", a1, a2, a3);
-            if (n == 3 && !strcmp(a1, "Job") && !strcmp(a2, "status:"))
-                state = a3;
-        }
-
-        {
-            char a1[128], a2[128];
-            int a3;
-            int n = sscanf(line_from_child, "%s %s %d\n", a1, a2, &a3);
-            if (n == 3 && !strcmp(a1, "Job") && !strcmp(a2, "ID")) {
-                jobid = a3;
-            }
-        }
+        env.parse_line(std::string(line_from_child), state, jobid);
         return false;
     }
 

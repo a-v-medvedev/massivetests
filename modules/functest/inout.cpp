@@ -71,7 +71,8 @@ static const std::string status_to_string(status_t st) {
     return "?";
 }
 
-input_maker::input_maker(test_scope<functest::traits> &_scope)
+template <typename parallel_conf_t>
+input_maker<parallel_conf_t>::input_maker(test_scope<functest::traits> &_scope)
     : scope(_scope) {
     assert(scope.workparts.size() == 1);
     const auto workload_conf = scope.workload_conf;
@@ -107,37 +108,58 @@ void input_maker::write_out(const std::string &input_file_name) {
 }
 */
 
-void input_maker::make(int n, int ppn, std::string &input_yaml, std::string &psubmit_options, std::string &args) {
+template <typename parallel_conf_t>
+void input_maker<parallel_conf_t>::make(const parallel_conf_t &pconf, execution_environment &env) {
 	assert(scope.workparts.size() == 1);
-    if (testitem.get_skip_flag(n, ppn)) { 
-        psubmit_options = "";
-        args = "";
+    if (testitem.get_skip_flag(pconf.first, pconf.second)) {
+        env.skip = true;
         return;
     }
+    // std::vector<std::pair<std:::string, std::string>> preq;
+    // bool notexist = false;
+    // if (testitem.get_prerequisites(preq)) {
+    //     for (const auto &elem : preq) {
+    //         auto &from = elem.first;
+    //         auto &to = elem.second;
+    //         if (exist(from)) {
+    //             copy(from, to);
+    //         } else {
+    //             notexist = true;
+    //             break;
+    //         }
+    //     }
+    //     if (notexist) {
+    //         env.holdover = true;
+    //         env.holdover_reason = "Prereq not found: " + from;
+    //     }
+    //     return;
+    // }
 	const auto &workload = scope.workload_conf.first;
 	const auto &conf = scope.workload_conf.second;
     if (conf == "X") {
-        psubmit_options = "./psubmit.opt";
+        env.psubmit_options = "./psubmit.opt";
     } else {
-        psubmit_options = "./psubmit_" + conf + ".opt";
+        env.psubmit_options = "./psubmit_" + conf + ".opt";
     }
-    input_yaml = "./input_" + workload + ".yaml";
-    args = load_key + " " + input_yaml;
-    args += std::string(" ") + result_key + std::string(" ") + " result.%PSUBMIT_JOBID%.yaml";
+    env.input_yaml = "./input_" + workload + ".yaml";
+    env.cmdline_args = load_key + " " + env.input_yaml;
+    env.cmdline_args += std::string(" ") + result_key + std::string(" ") + " result.%PSUBMIT_JOBID%.yaml";
     if (conf_key != "") {
-        args += std::string(" ") + conf_key + std::string(" ") + conf;
+        env.cmdline_args += std::string(" ") + conf_key + std::string(" ") + conf;
     }
-    if (timeout_key != "" && testitem.get_timeout(n, ppn)) {
-        args += std::string(" ") + timeout_key + std::string(" ") + std::to_string(testitem.get_timeout(n, ppn));
+    if (timeout_key != "" && testitem.get_timeout(pconf.first, pconf.second)) {
+        env.cmdline_args += std::string(" ") + timeout_key + std::string(" ") + 
+                            std::to_string(testitem.get_timeout(pconf.first, pconf.second));
     }
 
     char *aux_opts;
     if ((aux_opts = getenv("MASSIVETEST_AUX_ARGS"))) {
-        args += " " + std::string(aux_opts);
+        env.cmdline_args += " " + std::string(aux_opts);
     }
 }
 
-output_maker::output_maker(test_scope<functest::traits> &_scope, const std::string &_outfile)
+template <typename parallel_conf_t>
+output_maker<parallel_conf_t>::output_maker(test_scope<functest::traits> &_scope, const std::string &_outfile)
     : scope(_scope), outfile(_outfile) {
     out << YAML::BeginSeq;
     out << YAML::Flow;
@@ -152,7 +174,8 @@ output_maker::output_maker(test_scope<functest::traits> &_scope, const std::stri
     testitem.load(item);
 }
 
-output_maker::~output_maker() {
+template <typename parallel_conf_t>
+output_maker<parallel_conf_t>::~output_maker() {
     out << YAML::EndSeq;
     out << YAML::Newline;
     std::ofstream ofs(outfile, std::ios_base::out | std::ios_base::ate | std::ios_base::app);
@@ -178,9 +201,11 @@ status_t check_if_failed(const std::string &s, const std::string &jid) {
     return status_t::P;
 }
 
-void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
+template <typename parallel_conf_t>
+void output_maker<parallel_conf_t>::make(std::vector<std::shared_ptr<process<parallel_conf_t>>> &attempts) {
     functest::traits traits;
-    int n = -1, ppn = -1;
+    //int n = -1, ppn = -1;
+    parallel_conf_t pconf;
 	const auto wconf = scope.workload_conf;
 	const auto size = scope.workparts[0];
     using val_t = double;
@@ -195,12 +220,15 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
             std::cout << proc->full_output << std::endl;
             assert(0 && "psubmit starting problem");
         }
+        pconf = proc->pconf;
+/*
         if (n == -1)
             n = proc->n;
         if (ppn == -1)
             ppn = proc->ppn;
         assert(n == proc->n);
         assert(ppn == proc->ppn);
+*/        
         if (proc->skipped) {
             comment = "Marked as skipped";
             status = status_t::S;
@@ -295,21 +323,15 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
     }
     if (status == status_t::P) {
         for (auto &it : values) {
-            auto sp = helpers::str_split(it.first, '+');
-            assert(sp.size() == 2);
-            auto section = sp[0];
-            auto parameter = sp[1];
-            std::string param = section + "/" + parameter;
+            std::string param = it.first;
             auto &vals = it.second;
 #ifdef DEBUG  // FIXME make it an external cmdline param
-            std::cout << ">> functest: output: section=" << section << " parameter=" << parameter
-                      << std::endl;
+            std::cout << ">> functest: output: parameter=" << param << std::endl;
 #endif
             auto &v = vals[size];
             if (v.size() == 0) {
 #ifdef DEBUG // FIXME make it an external cmdline param
-                std::cout << ">> functest: output: nothing found for section/parameter: " << it.first
-                          << std::endl;
+                std::cout << ">> functest: output: nothing found for parameter: " << param << std::endl;
 #endif
                 comment = std::string("No data for par=") + param;
                 status = status_t::N;
@@ -339,7 +361,7 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
                 indir = v[0].second;
             }
             double diff = fabs(result_val - testitem.base[param]);
-            double tolerance = testitem.get_tolerance(param, n, ppn);
+            double tolerance = testitem.get_tolerance(param, pconf.first, pconf.second);
             if (diff > tolerance) {
 #ifdef DEBUG  // FIXME make it an external cmdline param
                 std::cout << ">> functest: diff > " << tolerance << ". GOLD VALUE COMPARISON FAILED!" << std::endl;
@@ -355,12 +377,15 @@ void output_maker::make(std::vector<std::shared_ptr<process>> &attempts) {
             }
         }
     }
-    auto r = traits.make_result(wconf, {n, ppn}, {"", ""}, size, status_to_string(status), comment);
+    auto r = traits.make_result(wconf, pconf, {"", ""}, size, status_to_string(status), comment);
     r->to_yaml(out);
     nresults++;
     std::cout << "OUTPUT: functest: {" << wconf.first << "," << wconf.second << "}"
-              << " on parallel conf: {" << n << "," << ppn << "} " << nresults
+              << " on parallel conf: {" << pconf.first << "," << pconf.second << "} " << nresults
               << " resulting items registered" << std::endl;
 }
+
+template class input_maker<functest::traits::parallel_conf_t>;
+template class output_maker<functest::traits::parallel_conf_t>;
 
 } // namespace functest

@@ -84,26 +84,27 @@ traits::make_scopes(const std::vector<traits::workload_conf_t> &workload_confs,
     return vec;
 }
 
-std::shared_ptr<input_maker_base> traits::make_input_maker(test_scope<traits> &scope) {
+std::shared_ptr<input_maker_base<traits::parallel_conf_t>> 
+traits::make_input_maker(test_scope<traits> &scope) {
     if (application == "teststub") {
-        return std::make_shared<input_maker_teststub>(scope);
+        return std::make_shared<input_maker_teststub<traits::parallel_conf_t>>(scope);
     } else if (application == "xamg") {
-        return std::make_shared<input_maker_xamg>(scope);
+        return std::make_shared<input_maker_xamg<traits::parallel_conf_t>>(scope);
     } else if (application == "qubiq") {
-        return std::make_shared<input_maker_qubiq>(scope);
+        return std::make_shared<input_maker_qubiq<traits::parallel_conf_t>>(scope);
     } else {
         return nullptr;
     }
 }
 
-std::shared_ptr<output_maker_base> traits::make_output_maker(test_scope<traits> &scope,
-                                                             const std::string &outfile) {
+std::shared_ptr<output_maker_base<traits::parallel_conf_t>> 
+traits::make_output_maker(test_scope<traits> &scope, const std::string &outfile) {
     if (application == "teststub") {
-        return std::make_shared<output_maker_teststub>(scope, outfile);
+        return std::make_shared<output_maker_teststub<traits::parallel_conf_t>>(scope, outfile);
     } else if (application == "xamg") {
-        return std::make_shared<output_maker_xamg>(scope, outfile);
+        return std::make_shared<output_maker_xamg<traits::parallel_conf_t>>(scope, outfile);
     } else if (application == "qubiq") {
-        return std::make_shared<output_maker_qubiq>(scope, outfile);
+        return std::make_shared<output_maker_qubiq<traits::parallel_conf_t>>(scope, outfile);
     } else {
         return nullptr;
     }
