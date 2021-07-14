@@ -111,7 +111,9 @@ void input_maker::write_out(const std::string &input_file_name) {
 template <typename parallel_conf_t>
 void input_maker<parallel_conf_t>::make(const parallel_conf_t &pconf, execution_environment &env) {
 	assert(scope.workparts.size() == 1);
-    if (testitem.get_skip_flag(pconf.first, pconf.second)) {
+    const auto &workload = scope.workload_conf.first;
+	const auto &conf = scope.workload_conf.second;
+    if (testitem.get_skip_flag(workload, pconf.first, pconf.second)) {
         env.skip = true;
         return;
     }
@@ -134,8 +136,6 @@ void input_maker<parallel_conf_t>::make(const parallel_conf_t &pconf, execution_
     //     }
     //     return;
     // }
-	const auto &workload = scope.workload_conf.first;
-	const auto &conf = scope.workload_conf.second;
     if (conf == "X") {
         env.psubmit_options = "./psubmit.opt";
     } else {

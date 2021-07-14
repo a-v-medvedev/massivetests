@@ -26,7 +26,8 @@ struct input_maker_qubiq : public input_maker<parallel_conf_t> {
     }
     virtual void make(const parallel_conf_t &pconf, execution_environment &env) override {
         input_maker<parallel_conf_t>::make(pconf, env);
-        if (testitem.get_skip_flag(pconf.first, pconf.second)) {
+        auto &workload = scope.workload_conf.first;
+        if (testitem.get_skip_flag(workload, pconf.first, pconf.second)) {
             env.skip = true;
             return;
         }

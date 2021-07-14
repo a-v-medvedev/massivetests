@@ -25,12 +25,12 @@ struct input_maker_xamg : public input_maker<parallel_conf_t> {
     }
     virtual void make(const parallel_conf_t &pconf, execution_environment &env) override {
         input_maker<parallel_conf_t>::make(pconf, env);
-        if (testitem.get_skip_flag(pconf.first, pconf.second)) {
+        auto matrix_name = scope.workparts[0].first;
+        assert(matrix_name.size() != 0);
+        if (testitem.get_skip_flag(matrix_name, pconf.first, pconf.second)) {
             env.skip = true;
             return;
         }
-        auto matrix_name = scope.workparts[0].first;
-        assert(matrix_name.size() != 0);
         if (matrix_name[0] == '@') {
             if (matrix_name.size() > 2 && matrix_name[1] == '@') {
                 env.cmdline_args += std::string(" -generator_params");

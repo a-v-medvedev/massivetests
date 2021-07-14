@@ -62,7 +62,7 @@ struct test_item_t {
 		if (!stream["common_params"]) 
 			return;
 		bool have_timeout_key = stream["common_params"].as<YAML::Node>()["timeout"]; 
-		bool have_skip_key = stream["common_params"].as<YAML::Node>()["skip"]; 
+		//bool have_skip_key = stream["common_params"].as<YAML::Node>()["skip"]; 
         const auto &cp = stream["common_params"].as<YAML::Node>();
         if (have_timeout_key)
 		{
@@ -151,7 +151,7 @@ struct test_item_t {
             default_skip = skip_dict["default"].as<double>();
         }
         std::pair<int, int> zero{0, 0};
-        skip_flag_variations[param][zero] = false;
+        skip_flag_variations[param][zero] = default_skip;
         for (YAML::const_iterator it = skip_dict.begin(); it != skip_dict.end(); ++it) {
             const auto& key = it->first.as<std::string>();
             bool val = it->second.as<double>();
@@ -193,16 +193,19 @@ struct test_item_t {
 		return default_timeout;
     }
 
-    unsigned get_skip_flag(int n, int ppn = 1) {
+    unsigned get_skip_flag(const std::string &param, int n, int ppn = 1) {
         unsigned default_skip_flag = skip;
         std::pair<int, int> zero(0, 0);
         std::pair<int, int> id(n, ppn);
-		if (skip_flag_variations.find(zero) != skip_flag_variations.end()) {
-			default_skip_flag = skip_flag_variations[zero];
-		}
-		if (skip_flag_variations.find(id) != skip_flag_variations.end()) {
-			return skip_flag_variations[id];
-		}
+        if (skip_flag_variations.find(param) != skip_flag_variations.end()) {
+            auto &skvp = skip_flag_variations[param];
+            if (skvp.find(zero) != skvp.end()) {
+                default_skip_flag = skvp[zero];
+            }
+            if (skvp.find(id) != skvp.end()) {
+                return skvp[id];
+            }
+        }
 		return default_skip_flag;
     }
 
