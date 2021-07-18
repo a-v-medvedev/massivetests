@@ -77,7 +77,12 @@ struct dispatcher {
                 break;
             std::shared_ptr<process<typename TRAITS::parallel_conf_t>> proc = waiting_processes[0];
             execution_environment env;
-            proc->im->make(proc->pconf, env);
+            auto &im = proc->im;
+            im->make(proc->pconf, env);
+            if (im->preproc != "")
+                proc->preproc = im->preproc;
+            if (im->postproc != "")
+                proc->postproc = im->postproc;
             if (env.holdover) {
                 proc->env = env;
                 waiting_processes.erase(waiting_processes.begin());
@@ -99,6 +104,7 @@ struct dispatcher {
                     while (!check_if_all_finished()) { ; }
                     break;
                 }
+                continue;
             }
 #if DEBUG  // FIXME consider making this output a command-line switchable option
             std::cout << ">> dispatcher: start: {" << TRAITS::parallel_conf_to_string(proc->pconf) << "} "

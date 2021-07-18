@@ -32,13 +32,17 @@ struct test_item_t {
     std::string name;
     std::map<std::string, double> base;
     protected:
+	std::vector<std::pair<std::string, std::string>> prereq;
 	std::map<std::string, std::map<std::pair<int, int>, double>> tolerance_variations;
 	std::map<std::pair<int, int>, unsigned> timeout_variations;
     std::map<std::string, std::map<std::pair<int, int>, bool>> skip_flag_variations;
     bool skip = false;
-    unsigned timeout = 15;  // FIXME make it a cmdline param
-    double tolerance = 1e-8; // FIXME make it a cmdline param
+    unsigned timeout = 0;
+    unsigned def_timeout = 15;  // FIXME make it a cmdline param
+    double tolerance = -1;
+    double def_tolerance = 1e-8; // FIXME make it a cmdline param
     public:
+    std::string preproc, postproc;
     bool get_int_pair_from_string(const std::string &str, std::pair<int, int> &output) {
         auto s = helpers::str_split(str, '/');
         if (s.size() != 2)
@@ -62,7 +66,6 @@ struct test_item_t {
 		if (!stream["common_params"]) 
 			return;
 		bool have_timeout_key = stream["common_params"].as<YAML::Node>()["timeout"]; 
-		//bool have_skip_key = stream["common_params"].as<YAML::Node>()["skip"]; 
         const auto &cp = stream["common_params"].as<YAML::Node>();
         if (have_timeout_key)
 		{
@@ -84,28 +87,6 @@ struct test_item_t {
 				timeout_variations[id] = val;
 			}
 		}
-        /*
-        if (have_skip_key)
-		{
-			const auto skip_flag_dict = cp["skip"].as<YAML::Node>();
-			std::pair<int, int> zero{0, 0};
-			bool default_skip_flag = skip;
-			if (skip_flag_dict["default"]) {
-				default_skip_flag = skip_flag_dict["default"].as<bool>();
-			}
-			skip_flag_variations[zero] = default_skip_flag;
-			for (YAML::const_iterator it = skip_flag_dict.begin(); it != skip_flag_dict.end(); ++it) {
-				const auto& key = it->first.as<std::string>();
-				bool val = it->second.as<bool>();
-				if (key == "default")
-					continue;
-				std::pair<int, int> id;
-				if (!get_int_pair_from_string(key, id))
-					continue;			
-				skip_flag_variations[id] = val;
-			}
-		}
-        */
 	}
 
 	void load_tolerance_from_common_params(YAML::Node &stream, const std::string &param) {
@@ -165,7 +146,10 @@ struct test_item_t {
 	}
 
 	double get_tolerance(const std::string &param, int n, int ppn = 1) {
-		double default_tolerance = tolerance;
+        if (tolerance != -1) {
+            return tolerance;
+        }
+		double default_tolerance = def_tolerance;
 		std::pair<int, int> zero(0, 0);
 		std::pair<int, int> id(n, ppn);
 		if (tolerance_variations.find(param) != tolerance_variations.end()) {
@@ -181,7 +165,10 @@ struct test_item_t {
 	}
 
     unsigned get_timeout(int n, int ppn = 1) {
-        unsigned default_timeout = timeout;
+        if (timeout != 0) {
+            return timeout;
+        }
+        unsigned default_timeout = def_timeout;
         std::pair<int, int> zero(0, 0);
         std::pair<int, int> id(n, ppn);
 		if (timeout_variations.find(zero) != timeout_variations.end()) {
@@ -192,6 +179,11 @@ struct test_item_t {
 		}
 		return default_timeout;
     }
+
+	bool get_prerequisites(std::vector<std::pair<std::string, std::string>> &_prereq) {
+		_prereq  = prereq;
+	    return prereq.size() != 0;	
+	}
 
     unsigned get_skip_flag(const std::string &param, int n, int ppn = 1) {
         unsigned default_skip_flag = skip;
@@ -238,10 +230,24 @@ struct test_item_t {
             }
             if (opts["tolerance"]) {
                 tolerance = opts["tolerance"].as<double>();
-            } else {
-                
             }
+            if (opts["preproc"]) {
+                preproc = opts["preproc"].as<std::string>();
+            }
+            if (opts["postproc"]) {
+                postproc = opts["postproc"].as<std::string>();
+            }
+
         }
+        if (item["prerequisites"]) {
+            const auto &pnode = item["prerequisites"].as<YAML::Node>();
+            for (auto it = pnode.begin(); it != pnode.end(); ++it) {
+                const auto &from = it->first.as<std::string>();
+                const auto &to = it->second.as<std::string>();
+                prereq.push_back(std::pair<std::string, std::string>(from, to));
+            }
+        }    
+
         const auto &vals = item["values"].as<YAML::Node>();
         for (auto it = vals.begin(); it != vals.end(); ++it) {
 			const auto &param = it->first.as<std::string>();

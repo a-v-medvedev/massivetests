@@ -24,12 +24,14 @@ class execution_environment;
 
 template <typename parallel_conf_t>
 struct input_maker_base {
+    std::string preproc, postproc;
     virtual void make(const parallel_conf_t &pconf, execution_environment &env) = 0;
     virtual ~input_maker_base() {}
 };
 
 template <typename parallel_conf_t>
 struct output_maker_base {
+    std::string preproc, postproc;
     virtual void make(std::vector<std::shared_ptr<process<parallel_conf_t>>> &attempts) = 0;
     virtual ~output_maker_base() {}
 };

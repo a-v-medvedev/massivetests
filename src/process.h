@@ -38,7 +38,7 @@ struct execution_environment {
     std::string executable; //= "psubmit.sh";
     execution_environment() : skip(false), holdover(false), executable("psubmit.sh") {}
     template <typename parallel_conf_t> 
-    void exec(const parallel_conf_t &pconf) {
+    void exec(const parallel_conf_t &pconf, const std::string &preproc, const std::string &postproc) {
         std::cout << "execlp: " << executable << " " << executable << " "
                   << "-n"
                   << " " << std::to_string(pconf.first) << " "
@@ -47,12 +47,19 @@ struct execution_environment {
                   << "-o"
                   << " " << psubmit_options << " "
                   << "-a"
-                  << " " << cmdline_args << std::endl;
+                  << " " << cmdline_args << " " 
+                  << "-b"
+                  << " " << preproc << " "
+                  << "-f"
+                  << " " << postproc << " "
+                  << std::endl;
         execlp(executable.c_str(), executable.c_str(), 
                 "-n", std::to_string(pconf.first).c_str(), 
                 "-p", std::to_string(pconf.second).c_str(), 
                 "-o", psubmit_options.c_str(), 
                 "-a", cmdline_args.c_str(),
+                "-b", preproc.c_str(),
+                "-f", postproc.c_str(),
                 (char *)nullptr);
     }
     std::string to_string() {
@@ -85,6 +92,7 @@ template <typename parallel_conf_t>
 struct process {
     parallel_conf_t pconf;
     execution_environment env;
+    std::string preproc, postproc;
     pid_t pid = 0;
     int jobid = -1;
     int retval = 0;
@@ -115,7 +123,7 @@ struct process {
             close(pipe_fd[0]);
             dup2(pipe_fd[1], STDOUT_FILENO);
             dup2(pipe_fd[1], STDERR_FILENO);
-            env.exec<parallel_conf_t>(pconf);
+            env.exec<parallel_conf_t>(pconf, preproc, postproc);
             std::cout << "execlp failed! " << strerror(errno) << std::endl;
             exit(1);
         }

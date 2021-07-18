@@ -22,6 +22,7 @@
 #include <vector>
 #include <map>
 #include <algorithm>
+#include <regex>
 #include <unistd.h>
 #include <memory>
 #include <assert.h>
@@ -108,6 +109,23 @@ void input_maker::write_out(const std::string &input_file_name) {
 }
 */
 
+static inline void subst(std::string &str, const std::string &pattern, const std::string &substitute) {
+    str = std::regex_replace(str, std::regex(pattern), substitute);
+}
+
+template <typename parallel_conf_t>
+bool file_exist(test_scope<functest::traits> &scope, parallel_conf_t &pconf, const std::string &_file) {
+    std::string file = _file;
+    subst(file, "%WLD%", scope.workload_conf.first);
+    subst(file, "%CONF%", scope.workload_conf.second);
+    subst(file, "%WPRT%", scope.workparts[0].first);
+    subst(file, "%NP%", std::to_string(pconf.first));
+    subst(file, "%PPN%", std::to_string(pconf.second));
+    std::cout << ">> " << file << std::endl;
+	struct stat r;   
+  	return (stat (file.c_str(), &r) == 0);
+}
+
 template <typename parallel_conf_t>
 void input_maker<parallel_conf_t>::make(const parallel_conf_t &pconf, execution_environment &env) {
 	assert(scope.workparts.size() == 1);
@@ -117,25 +135,25 @@ void input_maker<parallel_conf_t>::make(const parallel_conf_t &pconf, execution_
         env.skip = true;
         return;
     }
-    // std::vector<std::pair<std:::string, std::string>> preq;
-    // bool notexist = false;
-    // if (testitem.get_prerequisites(preq)) {
-    //     for (const auto &elem : preq) {
-    //         auto &from = elem.first;
-    //         auto &to = elem.second;
-    //         if (exist(from)) {
-    //             copy(from, to);
-    //         } else {
-    //             notexist = true;
-    //             break;
-    //         }
-    //     }
-    //     if (notexist) {
-    //         env.holdover = true;
-    //         env.holdover_reason = "Prereq not found: " + from;
-    //     }
-    //     return;
-    // }
+    std::vector<std::pair<std::string, std::string>> prereq;
+    bool notexist = false;
+    std::string from;
+    if (testitem.get_prerequisites(prereq)) {
+        for (const auto &elem : prereq) {
+            from = elem.first;
+            if (!file_exist(scope, pconf, from)) {
+#ifndef DEBUG                
+                std::cout << ">> functest: prerequisite testing: object doen't exist: " << from << std::endl;
+#endif                
+                notexist = true;
+                break;
+            }
+        }
+        if (notexist) {
+            env.holdover = true;
+            env.holdover_reason = "Prerequisite object not found: " + from;
+        }
+    }
     if (conf == "X") {
         env.psubmit_options = "./psubmit.opt";
     } else {
@@ -151,11 +169,26 @@ void input_maker<parallel_conf_t>::make(const parallel_conf_t &pconf, execution_
         env.cmdline_args += std::string(" ") + timeout_key + std::string(" ") + 
                             std::to_string(testitem.get_timeout(pconf.first, pconf.second));
     }
-
     char *aux_opts;
     if ((aux_opts = getenv("MASSIVETEST_AUX_ARGS"))) {
         env.cmdline_args += " " + std::string(aux_opts);
     }
+//    input_maker_base<parallel_conf_t>::preproc = testitem.preproc;
+    auto &pr = input_maker_base<parallel_conf_t>::preproc;
+    pr = testitem.preproc;
+    subst(pr, "%WLD%", scope.workload_conf.first);
+    subst(pr, "%CONF%", scope.workload_conf.second);
+    subst(pr, "%WPRT%", scope.workparts[0].first);
+    subst(pr, "%NP%", std::to_string(pconf.first));
+    subst(pr, "%PPN%", std::to_string(pconf.second));
+
+    auto &po = input_maker_base<parallel_conf_t>::postproc;
+    po = testitem.postproc;
+    subst(po, "%WLD%", scope.workload_conf.first);
+    subst(po, "%CONF%", scope.workload_conf.second);
+    subst(po, "%WPRT%", scope.workparts[0].first);
+    subst(po, "%NP%", std::to_string(pconf.first));
+    subst(po, "%PPN%", std::to_string(pconf.second));
 }
 
 template <typename parallel_conf_t>
@@ -204,7 +237,6 @@ status_t check_if_failed(const std::string &s, const std::string &jid) {
 template <typename parallel_conf_t>
 void output_maker<parallel_conf_t>::make(std::vector<std::shared_ptr<process<parallel_conf_t>>> &attempts) {
     functest::traits traits;
-    //int n = -1, ppn = -1;
     parallel_conf_t pconf;
 	const auto wconf = scope.workload_conf;
 	const auto size = scope.workparts[0];
@@ -221,16 +253,12 @@ void output_maker<parallel_conf_t>::make(std::vector<std::shared_ptr<process<par
             assert(0 && "psubmit starting problem");
         }
         pconf = proc->pconf;
-/*
-        if (n == -1)
-            n = proc->n;
-        if (ppn == -1)
-            ppn = proc->ppn;
-        assert(n == proc->n);
-        assert(ppn == proc->ppn);
-*/        
         if (proc->skipped) {
-            comment = "Marked as skipped";
+            if (proc->env.holdover_reason != "") {
+                comment = proc->env.holdover_reason;
+            } else {
+                comment = "Marked as skipped";
+            }
             status = status_t::S;
             break;
         }
