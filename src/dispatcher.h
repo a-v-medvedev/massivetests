@@ -50,6 +50,9 @@ struct dispatcher {
              std::vector<std::shared_ptr<process<parallel_conf_t>>>> attempts;
     size_t nattempts;
     size_t nqueued;
+    bool all_in_holdover = false;
+    size_t nholdover = 0;
+    size_t ntimesinfullholdover = 0;
     uint64_t oldcs = 0;
     size_t finished = 0, queued = 0, done = 0, error = 0;
     dispatcher(int _nattempts, int _nqueued) : nattempts(_nattempts), nqueued(_nqueued) {}
@@ -71,7 +74,7 @@ struct dispatcher {
             return;
         inside = true;
         while (
-            (processes.size() - finished < nqueued) ||
+            (processes.size() - finished < (nqueued + nholdover)) ||
             ((finished || done) && (queued < 2) && (processes.size() - finished < 2 * nqueued))) {
             if (waiting_processes.size() == 0)
                 break;
@@ -87,23 +90,35 @@ struct dispatcher {
                 proc->env = env;
                 waiting_processes.erase(waiting_processes.begin());
                 waiting_processes.push_back(proc);
-                size_t q = 0;
+                nholdover = 0;
                 for (const auto &p : waiting_processes) {
                     if (p->env.holdover) {
-                        q++;
+                        nholdover++;
                     }
                 }
-                if (q == waiting_processes.size()) {
+                if (nholdover == waiting_processes.size()) {
+                    ntimesinfullholdover++;
+                    all_in_holdover = true;
+                } else {
+                    ntimesinfullholdover = 0;
+                    all_in_holdover = false;
+                }
+                if (all_in_holdover && ntimesinfullholdover > 100) {
+                    std::cout << ">> " << ntimesinfullholdover << " waiting_processes.size()=" << waiting_processes.size() << std::endl;
                     for (const auto &p : waiting_processes) {
                         auto &e = p->env;
                         e.holdover = false;
                         e.skip = true;
                         p->start(e);
-                    }
-                    waiting_processes.erase(waiting_processes.begin(), waiting_processes.end());
+                    }                     waiting_processes.erase(waiting_processes.begin(), waiting_processes.end());
                     while (!check_if_all_finished()) { ; }
                     break;
+                    all_in_holdover = 0; 
+                    ntimesinfullholdover = 0;
+                } else {
+                    break;
                 }
+
                 continue;
             }
 #if DEBUG  // FIXME consider making this output a command-line switchable option
