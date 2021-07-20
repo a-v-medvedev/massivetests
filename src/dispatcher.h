@@ -74,7 +74,7 @@ struct dispatcher {
             return;
         inside = true;
         while (
-            (processes.size() - finished < (nqueued + nholdover)) ||
+            (processes.size() - finished < nqueued) ||
             ((finished || done) && (queued < 2) && (processes.size() - finished < 2 * nqueued))) {
             if (waiting_processes.size() == 0)
                 break;
@@ -97,28 +97,42 @@ struct dispatcher {
                     }
                 }
                 if (nholdover == waiting_processes.size()) {
-                    ntimesinfullholdover++;
+                    if (processes.size() - finished == 0) {
+                        ntimesinfullholdover++;
+                    }
                     all_in_holdover = true;
                 } else {
-                    ntimesinfullholdover = 0;
+#ifdef DEBUG        
+                    if (all_in_holdover) {            
+                        std::cout << ">> CLEARED: all in holover: was " << ntimesinfullholdover << " times seen, now cleared, waiting_processes.size()=" << waiting_processes.size() << std::endl;
+                    }
+#endif                    
                     all_in_holdover = false;
-                }
-                if (all_in_holdover && ntimesinfullholdover > 100) {
-                    std::cout << ">> " << ntimesinfullholdover << " waiting_processes.size()=" << waiting_processes.size() << std::endl;
-                    for (const auto &p : waiting_processes) {
-                        auto &e = p->env;
-                        e.holdover = false;
-                        e.skip = true;
-                        p->start(e);
-                    }                     waiting_processes.erase(waiting_processes.begin(), waiting_processes.end());
-                    while (!check_if_all_finished()) { ; }
-                    break;
-                    all_in_holdover = 0; 
                     ntimesinfullholdover = 0;
-                } else {
-                    break;
                 }
-
+                if (all_in_holdover) {
+                    if (ntimesinfullholdover > 1000) {
+#ifdef DEBUG        
+                        std::cout << ">> LIMIT: all in holover: " << ntimesinfullholdover << " times seen, waiting_processes.size()=" << waiting_processes.size() << std::endl;
+#endif                        
+                        for (const auto &p : waiting_processes) {
+                            auto &e = p->env;
+                            e.holdover = false;
+                            e.skip = true;
+                            p->start(e);
+                            processes.push_back(p);
+                        }
+                        std::cout << "DISPATCHER: all waiting process are in holdover state: now marked " << waiting_processes.size() << " processes as skipped" << std::endl;                     
+                        waiting_processes.erase(waiting_processes.begin(), waiting_processes.end());
+                        std::cout << "DISPATCHER: now waiting for finished status..." << std::endl;
+                        while (!check_if_all_finished()) { ; }
+                        all_in_holdover = 0; 
+                        ntimesinfullholdover = 0;
+                        std::cout << "DISPATCHER: all left holdover-state processes marked finished." << std::endl;
+                        break;
+                   }
+                   break;
+                }                 
                 continue;
             }
 #if DEBUG  // FIXME consider making this output a command-line switchable option
@@ -133,6 +147,8 @@ struct dispatcher {
             if (queued < 2)
                 usleep(1000);
         }
+        if (all_in_holdover)
+            usleep(10000);
         inside = false;
     }
 

@@ -121,7 +121,7 @@ bool file_exist(test_scope<functest::traits> &scope, parallel_conf_t &pconf, con
     subst(file, "%WPRT%", scope.workparts[0].first);
     subst(file, "%NP%", std::to_string(pconf.first));
     subst(file, "%PPN%", std::to_string(pconf.second));
-    std::cout << ">> " << file << std::endl;
+    //std::cout << ">> " << file << std::endl;
 	struct stat r;   
   	return (stat (file.c_str(), &r) == 0);
 }
@@ -142,8 +142,8 @@ void input_maker<parallel_conf_t>::make(const parallel_conf_t &pconf, execution_
         for (const auto &elem : prereq) {
             from = elem.first;
             if (!file_exist(scope, pconf, from)) {
-#ifndef DEBUG                
-                std::cout << ">> functest: prerequisite testing: object doen't exist: " << from << std::endl;
+#ifdef DEBUG                
+                std::cout << ">> functest: prerequisite testing: object doesn't exist: " << from << std::endl;
 #endif                
                 notexist = true;
                 break;
