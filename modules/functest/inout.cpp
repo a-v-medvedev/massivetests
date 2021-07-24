@@ -173,7 +173,6 @@ void input_maker<parallel_conf_t>::make(const parallel_conf_t &pconf, execution_
     if ((aux_opts = getenv("MASSIVETEST_AUX_ARGS"))) {
         env.cmdline_args += " " + std::string(aux_opts);
     }
-//    input_maker_base<parallel_conf_t>::preproc = testitem.preproc;
     auto &pr = input_maker_base<parallel_conf_t>::preproc;
     pr = testitem.preproc;
     subst(pr, "%WLD%", scope.workload_conf.first);
@@ -239,9 +238,9 @@ void output_maker<parallel_conf_t>::make(std::vector<std::shared_ptr<process<par
     functest::traits traits;
     parallel_conf_t pconf;
 	const auto wconf = scope.workload_conf;
-	const auto size = scope.workparts[0];
+	const auto workpart = scope.workparts[0];
     using val_t = double;
-    using vals_t = std::map<decltype(size), std::vector<std::pair<val_t, std::string>>>;
+    using vals_t = std::map<decltype(workpart), std::vector<std::pair<val_t, std::string>>>;
     std::map<std::string, vals_t> values;
     status_t status = status_t::P;
     std::string comment;
@@ -301,43 +300,49 @@ void output_maker<parallel_conf_t>::make(std::vector<std::shared_ptr<process<par
 #ifdef DEBUG // FIXME make it an external cmdline param
         std::cout << ">> functest: input: reading " << infile << std::endl;
 #endif
-        auto stream = YAML::Load(in);
-        auto tps = testitem.update_target_parameters(scope.target_parameters);
-        for (auto &sp : tps) {
-            std::string &section = sp.first;
-            std::string &parameter = sp.second;
-            auto str_sp = traits.target_parameter_to_string(sp);
-            auto &vals = values[str_sp];
-            if (!stream[section])
-                continue;
-            const auto &sec = stream[section].as<YAML::Node>();
-            if (parameter.find("[") != std::string::npos && 
-                parameter.find("]") != std::string::npos) {
-                auto pv = helpers::str_split(parameter, '[');
-                assert(pv.size() == 2);
-                auto idxv = helpers::str_split(pv[1], ']');
-                assert(idxv.size() == 1);
-                auto p = pv[0];
-                auto idx = idxv[0];
-                size_t i = std::stol(idx);
-                if (!sec[p])
+        try {
+            auto stream = YAML::Load(in);
+            auto tps = testitem.update_target_parameters(scope.target_parameters);
+            for (auto &sp : tps) {
+                std::string &section = sp.first;
+                std::string &parameter = sp.second;
+                auto str_sp = traits.target_parameter_to_string(sp);
+                auto &vals = values[str_sp];
+                if (!stream[section])
                     continue;
-                const auto &pn = sec[p].as<YAML::Node>();
-                size_t n = 0;
-                for (YAML::const_iterator it = pn.begin(); it != pn.end(); ++it) {
-                    if (i == n++) {
-                        std::pair<val_t, std::string> item(it->as<val_t>(), indir); 
-                        vals[size].push_back(item);
-                        break;
+                const auto &sec = stream[section].as<YAML::Node>();
+                if (parameter.find("[") != std::string::npos && 
+                    parameter.find("]") != std::string::npos) {
+                    auto pv = helpers::str_split(parameter, '[');
+                    assert(pv.size() == 2);
+                    auto idxv = helpers::str_split(pv[1], ']');
+                    assert(idxv.size() == 1);
+                    auto p = pv[0];
+                    auto idx = idxv[0];
+                    size_t i = std::stol(idx);
+                    if (!sec[p])
+                        continue;
+                    const auto &pn = sec[p].as<YAML::Node>();
+                    size_t n = 0;
+                    for (YAML::const_iterator it = pn.begin(); it != pn.end(); ++it) {
+                        if (i == n++) {
+                            std::pair<val_t, std::string> item(it->as<val_t>(), indir); 
+                            vals[workpart].push_back(item);
+                            break;
+                        }
                     }
+                } else {
+                    if (!sec[parameter])
+                        continue;
+                    const auto &p = sec[parameter].as<YAML::Node>();
+                    std::pair<val_t, std::string> item(p.as<val_t>(), indir);
+                    vals[workpart].push_back(item);
                 }
-            } else {
-                if (!sec[parameter])
-                    continue;
-                const auto &p = sec[parameter].as<YAML::Node>();
-                std::pair<val_t, std::string> item(p.as<val_t>(), indir);
-                vals[size].push_back(item);
             }
+        }
+        catch (std::runtime_error &ex) {
+            std::cout << "OUTPUT: parse error on YAML file: " << infile << std::endl;
+            values.clear();
         }
     }
     // NOTE: commented out this assert: lets handle missing input files as non-fatal case
@@ -356,7 +361,7 @@ void output_maker<parallel_conf_t>::make(std::vector<std::shared_ptr<process<par
 #ifdef DEBUG  // FIXME make it an external cmdline param
             std::cout << ">> functest: output: parameter=" << param << std::endl;
 #endif
-            auto &v = vals[size];
+            auto &v = vals[workpart];
             if (v.size() == 0) {
 #ifdef DEBUG // FIXME make it an external cmdline param
                 std::cout << ">> functest: output: nothing found for parameter: " << param << std::endl;
@@ -405,7 +410,7 @@ void output_maker<parallel_conf_t>::make(std::vector<std::shared_ptr<process<par
             }
         }
     }
-    auto r = traits.make_result(wconf, pconf, {"", ""}, size, status_to_string(status), comment);
+    auto r = traits.make_result(wconf, pconf, {"", ""}, workpart, status_to_string(status), comment);
     r->to_yaml(out);
     nresults++;
     std::cout << "OUTPUT: functest: {" << wconf.first << "," << wconf.second << "}"
