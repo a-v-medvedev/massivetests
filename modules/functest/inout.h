@@ -127,15 +127,15 @@ struct test_item_t {
 		if (!dict[param])
 			return;
 		const auto &skip_dict = dict[param].as<YAML::Node>();
-        double default_skip = false;
+        bool default_skip = false;
         if (skip_dict["default"]) {
-            default_skip = skip_dict["default"].as<double>();
+            default_skip = skip_dict["default"].as<bool>();
         }
         std::pair<int, int> zero{0, 0};
         skip_flag_variations[param][zero] = default_skip;
         for (YAML::const_iterator it = skip_dict.begin(); it != skip_dict.end(); ++it) {
             const auto& key = it->first.as<std::string>();
-            bool val = it->second.as<double>();
+            bool val = it->second.as<bool>();
             if (key == "default")
                 continue;
             std::pair<int, int> id;
@@ -253,8 +253,8 @@ struct test_item_t {
 			const auto &param = it->first.as<std::string>();
             base[param] = it->second.as<double>();
 			load_tolerance_from_common_params(stream, param);
-            load_skip_flag_from_common_params(stream, param);
         }
+        load_skip_flag_from_common_params(stream, name);
 		load_simple_common_params(stream);
     }
     using target_parameter_vector_t = std::vector<functest::traits::target_parameter_t>;
