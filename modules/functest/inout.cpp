@@ -264,6 +264,7 @@ void output_maker<parallel_conf_t>::make(std::vector<std::shared_ptr<process<par
         std::string indir = std::string("results.") + std::to_string(j);
         if (proc->retval) {
             comment = std::string("Non-zero return code: ") + std::to_string(proc->retval);
+            comment += std::string(" dir=") + indir;
             status = status_t::N;
             struct stat s;
             bool ok = false;
@@ -343,6 +344,8 @@ void output_maker<parallel_conf_t>::make(std::vector<std::shared_ptr<process<par
         catch (std::runtime_error &ex) {
             std::cout << "OUTPUT: parse error on YAML file: " << infile << std::endl;
             values.clear();
+            comment = std::string("dir=") + indir;
+            break;
         }
     }
     // NOTE: commented out this assert: lets handle missing input files as non-fatal case
@@ -351,7 +354,10 @@ void output_maker<parallel_conf_t>::make(std::vector<std::shared_ptr<process<par
     attempts.resize(0);
     int nresults = 0;
     if (status == status_t::P && values.size() == 0) {
-        comment = "No data found";
+        if (comment.size())
+            comment = "No data found " + comment;
+        else
+            comment = "No data found";
         status = status_t::N;
     }
     if (status == status_t::P) {
@@ -370,12 +376,9 @@ void output_maker<parallel_conf_t>::make(std::vector<std::shared_ptr<process<par
                 status = status_t::N;
                 break;
             }
-            val_t result_val = 0.0;
-            std::string indir;
-            if (v.size() == 1) {
-                result_val = v[0].first;
-                indir = v[0].second;
-            } else {
+            val_t result_val = v[0].first;
+            std::string indir = v[0].second;
+            if (v.size() > 1) {
                 sort(v.begin(), v.end());
                 auto diff = v.front().first - v.back().first;
                 if (diff != 0) {
@@ -390,8 +393,6 @@ void output_maker<parallel_conf_t>::make(std::vector<std::shared_ptr<process<par
                     status = status_t::F;
                     break;
                 }
-                result_val = v[0].first;
-                indir = v[0].second;
             }
             double diff = fabs(result_val - testitem.base[param]);
             double tolerance = testitem.get_tolerance(param, pconf.first, pconf.second);
