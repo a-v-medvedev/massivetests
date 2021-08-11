@@ -179,7 +179,7 @@ function init_env()  {
     [ -e psubmit.bin ] || fatal "psubmit.bin directory or symlink required."
     [ -e thirdparty ] || fatal "thirdparty directory or symlink required."
     export PATH=$PWD/psubmit.bin:$PATH
-    export LD_LIBRARY_PATH=$PWD/thirdparty/yaml-cpp.bin/lib:$PWD/thirdparty/argsparser.bin:$LD_LIBRARY_PATH
+    export LD_LIBRARY_PATH=$PWD/lib:$PWD/thirdparty/yaml-cpp.bin/lib:$PWD/thirdparty/argsparser.bin:$LD_LIBRARY_PATH
     [ -x ./massivetest ] || fatal "massivetest executable is required."
     [ -e ./params.inc ] || fatal "params.inc executable is required."
     [ -e ./modeset.inc ] || fatal "modeset.inc executable is required."
