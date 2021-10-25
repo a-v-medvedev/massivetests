@@ -41,7 +41,7 @@ struct input_maker_xamg : public input_maker<parallel_conf_t> {
                 auto dim = helpers::str_split(matrix_name.substr(1), 'x');
                 env.cmdline_args += std::string(" -matrix generate");
                 env.cmdline_args += std::string(" -generator_params"); 
-                env.cmdline_args += std::string(" case=cube:");
+                env.cmdline_args += std::string(" case=cube-7pt:");
                 env.cmdline_args += std::string("nx=") + dim[0] + ":" + std::string("ny=") + dim[1] + ":" +
                                     std::string("nz=") + dim[2];
             }
