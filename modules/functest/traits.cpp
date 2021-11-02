@@ -35,6 +35,7 @@
 #include "modules/functest/inout_teststub.h"
 #include "modules/functest/inout_xamg.h"
 #include "modules/functest/inout_qubiq.h"
+#include "modules/functest/inout_aramco.h"
 #include "results.h"
 
 namespace functest {
@@ -92,6 +93,8 @@ traits::make_input_maker(test_scope<traits> &scope) {
         return std::make_shared<input_maker_xamg<traits::parallel_conf_t>>(scope);
     } else if (application == "qubiq") {
         return std::make_shared<input_maker_qubiq<traits::parallel_conf_t>>(scope);
+    } else if (application == "aramco") {
+        return std::make_shared<input_maker_aramco<traits::parallel_conf_t>>(scope);
     } else {
         return nullptr;
     }

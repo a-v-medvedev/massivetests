@@ -36,6 +36,7 @@
 #include "modules/functest/inout_teststub.h"
 #include "modules/functest/inout_xamg.h"
 #include "modules/functest/inout_qubiq.h"
+#include "modules/functest/inout_aramco.h"
 
 #include "helpers.h"
 #include "results.h"
