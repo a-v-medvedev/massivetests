@@ -108,6 +108,8 @@ traits::make_output_maker(test_scope<traits> &scope, const std::string &outfile)
         return std::make_shared<output_maker_xamg<traits::parallel_conf_t>>(scope, outfile);
     } else if (application == "qubiq") {
         return std::make_shared<output_maker_qubiq<traits::parallel_conf_t>>(scope, outfile);
+    } else if (application == "aramco") {
+        return std::make_shared<output_maker_aramco<traits::parallel_conf_t>>(scope, outfile);
     } else {
         return nullptr;
     }
