@@ -35,7 +35,7 @@ struct input_maker_aramco : public input_maker<parallel_conf_t> {
         //assert(grid.size() != 0);
         //env.cmdline_args += std::string(" -grid ") + grid;
         //env.cmdline_args += std::string(" -remove_decomp yes");
-        //env.cmdline_args += std::string(" -output_dir out.%PSUBMIT_JOBID%");
+        env.cmdline_args += std::string(" -output_dir out.%PSUBMIT_JOBID%");
     }
 };
 
