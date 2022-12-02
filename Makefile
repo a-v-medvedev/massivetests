@@ -1,5 +1,5 @@
 THIRDPARTY ?= thirdparty
-MODULE ?= imb_async
+MODULE ?= functest
 STATIC ?= FALSE
 
 override CXXFLAGS += -O2 -std=c++11 -Wall -Wextra -pedantic -I$(THIRDPARTY)/argsparser.bin -I$(THIRDPARTY)/yaml-cpp.bin/include -I. -Isrc -D__USE_BSD 

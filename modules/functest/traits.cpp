@@ -6,13 +6,13 @@
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
-    Foobar is distributed in the hope that it will be useful,
+    massivetests is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with Foobar.  If not, see <https://www.gnu.org/licenses/>.
+    along with massivetests.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 #include <iostream>
@@ -35,7 +35,7 @@
 #include "modules/functest/inout_teststub.h"
 #include "modules/functest/inout_xamg.h"
 #include "modules/functest/inout_qubiq.h"
-#include "modules/functest/inout_aramco.h"
+#include "modules/functest/inout_fs1D.h"
 #include "results.h"
 
 namespace functest {
@@ -93,9 +93,10 @@ traits::make_input_maker(test_scope<traits> &scope) {
         return std::make_shared<input_maker_xamg<traits::parallel_conf_t>>(scope);
     } else if (application == "qubiq") {
         return std::make_shared<input_maker_qubiq<traits::parallel_conf_t>>(scope);
-    } else if (application == "aramco") {
-        return std::make_shared<input_maker_aramco<traits::parallel_conf_t>>(scope);
+    } else if (application == "fs1D") {
+        return std::make_shared<input_maker_fs1D<traits::parallel_conf_t>>(scope);
     } else {
+        throw std::runtime_error("input_maker: Unknown application");
         return nullptr;
     }
 }
@@ -108,9 +109,10 @@ traits::make_output_maker(test_scope<traits> &scope, const std::string &outfile)
         return std::make_shared<output_maker_xamg<traits::parallel_conf_t>>(scope, outfile);
     } else if (application == "qubiq") {
         return std::make_shared<output_maker_qubiq<traits::parallel_conf_t>>(scope, outfile);
-    } else if (application == "aramco") {
-        return std::make_shared<output_maker_aramco<traits::parallel_conf_t>>(scope, outfile);
+    } else if (application == "fs1D") {
+        return std::make_shared<output_maker_fs1D<traits::parallel_conf_t>>(scope, outfile);
     } else {
+        throw std::runtime_error("output_maker: Unknown application");
         return nullptr;
     }
 }
