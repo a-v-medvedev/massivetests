@@ -23,14 +23,16 @@ struct input_maker_xamg : public input_maker<parallel_conf_t> {
     using input_maker<parallel_conf_t>::scope;
     input_maker_xamg(test_scope<traits> &_scope) : input_maker<parallel_conf_t>(_scope) { 
     }
-    virtual void make(const parallel_conf_t &pconf, execution_environment &env) override {
-        input_maker<parallel_conf_t>::make(pconf, env);
+    virtual bool make(const parallel_conf_t &pconf, execution_environment &env) override {
+        if (!input_maker<parallel_conf_t>::make(pconf, env))
+            return false;
         auto matrix_name = scope.workparts[0].first;
         assert(matrix_name.size() != 0);
+        /*
         if (testitem.get_skip_flag(matrix_name, pconf.first, pconf.second)) {
             env.skip = true;
             return;
-        }
+        }*/
         if (matrix_name[0] == '@') {
             if (matrix_name.size() > 2 && matrix_name[1] == '@') {
                 env.cmdline_args += std::string(" -generator_params");
@@ -54,6 +56,7 @@ struct input_maker_xamg : public input_maker<parallel_conf_t> {
             env.cmdline_args += std::string(" -solver_params max_iters=") + 
                                 std::to_string((int)testitem.base["solver/iters"]);
         }
+        return true;
     }
 };
 

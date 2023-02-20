@@ -291,7 +291,7 @@ struct input_maker : public input_maker_base<parallel_conf_t> {
     test_item_t testitem;
     test_scope<traits> &scope;
     input_maker(test_scope<traits> &_scope);
-    virtual void make(const parallel_conf_t &pconf, execution_environment &env);
+    virtual bool make(const parallel_conf_t &pconf, execution_environment &env);
 };
 
 template <typename parallel_conf_t>

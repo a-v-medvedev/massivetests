@@ -22,8 +22,8 @@ struct input_maker_teststub : public input_maker<parallel_conf_t> {
     input_maker_teststub(test_scope<traits> &_scope) : input_maker<parallel_conf_t>(_scope) {
         input_maker<parallel_conf_t>::result_key = "-output";
     }
-    virtual void make(const parallel_conf_t &pconf, execution_environment &env) override {
-        input_maker<parallel_conf_t>::make(pconf, env);
+    virtual bool make(const parallel_conf_t &pconf, execution_environment &env) override {
+        return input_maker<parallel_conf_t>::make(pconf, env);
     }
 };
 

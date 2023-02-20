@@ -25,7 +25,7 @@ class execution_environment;
 template <typename parallel_conf_t>
 struct input_maker_base {
     std::string preproc, postproc;
-    virtual void make(const parallel_conf_t &pconf, execution_environment &env) = 0;
+    virtual bool make(const parallel_conf_t &pconf, execution_environment &env) = 0;
     virtual ~input_maker_base() {}
 };
 
