@@ -58,6 +58,15 @@ namespace functest {
 
 enum status_t { P=0, F=1, N=2, S=3, T=4, A=5, C=6, E=7 };
 
+
+static bool file_exists(const std::string &file) {
+    return access(file.c_str(), F_OK) == 0;
+}
+
+static bool file_is_exec(const std::string &file) {
+    return access(file.c_str(), X_OK) == 0;
+}
+
 static const std::string status_to_string(status_t st) {
     switch (st) {
         case status_t::P: return "P";
@@ -87,31 +96,17 @@ input_maker<parallel_conf_t>::input_maker(test_scope<functest::traits> &_scope)
 	testitem.load(item);
 }
 
-/*
-void input_maker::write_out(const std::string &input_file_name) {
-    (void)input_file_name;
-    if (was_written)
-        return;
-   
-    std::ofstream ofs(input_file_name);
-    YAML::Emitter out;
-    out << YAML::BeginDoc;
-    out << YAML::BeginMap;
-    out << YAML::Flow;
-
-    YAML_OUT("version", 0);
-    YAML_OUT("parameter", 10);
-
-    out << YAML::EndMap;
-    out << YAML::EndDoc;
-    ofs << out.c_str();
-    
-    was_written = true;
-}
-*/
-
 static inline void subst(std::string &str, const std::string &pattern, const std::string &substitute) {
     str = std::regex_replace(str, std::regex(pattern), substitute);
+}
+
+static inline void subst(std::string &str, char pattern, char substitute) {
+	size_t pos = 0;
+	std::string str_substitute(1, substitute);
+	while ((pos = str.find(pattern, pos)) != std::string::npos) {
+		str.replace(pos, 1, str_substitute);
+		pos += 1; // skip the replaced character
+	}    
 }
 
 template <typename parallel_conf_t>
@@ -120,21 +115,52 @@ bool file_exist(test_scope<functest::traits> &scope, parallel_conf_t &pconf, con
     subst(file, "%WLD%", scope.workload_conf.first);
     subst(file, "%CONF%", scope.workload_conf.second);
     subst(file, "%WPRT%", scope.workparts[0].first);
+    subst(file, "%WPRT_PARAM%", std::to_string(scope.workparts[0].second));
     subst(file, "%NP%", std::to_string(pconf.first));
     subst(file, "%PPN%", std::to_string(pconf.second));
-    //std::cout << ">> " << file << std::endl;
 	struct stat r;   
   	return (stat (file.c_str(), &r) == 0);
 }
 
 template <typename parallel_conf_t>
-void input_maker<parallel_conf_t>::make(const parallel_conf_t &pconf, execution_environment &env) {
+bool exec_shell_command(test_scope<functest::traits> &scope, parallel_conf_t &pconf, const test_item_t &testitem, 
+                        const std::string &script,
+                        std::string &result, int &status) {
+	std::string command = script + " ";
+	command += std::string("WLD=") + scope.workload_conf.first + " ";
+	command += std::string("CONF=") + scope.workload_conf.second + " ";
+	command += std::string("WPRT=") + scope.workparts[0].first + " ";
+	command += std::string("WPRT_PARAM=") + std::to_string(scope.workparts[0].second) + " ";
+	command += std::string("NP=") + std::to_string(pconf.first) + " ";
+	command += std::string("PPN=") + std::to_string(pconf.second) + " ";
+	auto timeout = testitem.get_timeout(pconf.first, pconf.second);
+	command += std::string("TIMEOUT=") + std::to_string(timeout) + " ";
+    for (const auto &kv : testitem.base) {
+        std::string replaced(kv.first);
+		subst(replaced, "/", "_");
+        command += std::string("TESTITEM__") + replaced + "=" + std::to_string(kv.second) + " ";
+    }
+    char buffer[128]; // buffer to read the command's output
+    FILE* pipe = popen(command.c_str(), "r"); // open a pipe to the command
+    if (!pipe) {
+        std::cerr << ">> functest: popen() failed: <" << command << ">" << std::endl;
+        return false;
+    }
+    while (fgets(buffer, sizeof(buffer), pipe)) {
+        result += std::string(buffer);
+    }
+    status = pclose(pipe);
+    return true;
+}
+
+template <typename parallel_conf_t>
+bool input_maker<parallel_conf_t>::make(const parallel_conf_t &pconf, execution_environment &env) {
 	assert(scope.workparts.size() == 1);
     const auto &workload = scope.workload_conf.first;
 	const auto &conf = scope.workload_conf.second;
     if (testitem.get_skip_flag(workload, pconf.first, pconf.second)) {
         env.skip = true;
-        return;
+        return false;
     }
     std::vector<std::pair<std::string, std::string>> prereq;
     bool notexist = false;
@@ -161,24 +187,47 @@ void input_maker<parallel_conf_t>::make(const parallel_conf_t &pconf, execution_
         env.psubmit_options = "./psubmit_" + conf + ".opt";
     }
     env.input_yaml = "./input_" + workload + ".yaml";
-    env.cmdline_args = load_key + " " + env.input_yaml;
-    env.cmdline_args += std::string(" ") + result_key + std::string(" ") + " result.%PSUBMIT_JOBID%.yaml";
-    if (conf_key != "") {
-        env.cmdline_args += std::string(" ") + conf_key + std::string(" ") + conf;
+
+    bool cmdline_requires_additional_filling = true;
+    const std::string input_maker_script = "./input_maker_cmdline.sh";
+    if (file_exists(input_maker_script) && file_is_exec(input_maker_script)) {
+        cmdline_requires_additional_filling = false;
+		int status = -1;
+        bool result = exec_shell_command(scope, pconf, testitem, input_maker_script + " 2>&1", env.cmdline_args, status);
+		if (!result) {
+			env.skip = true;
+            std::cout << "INPUT: input maker script execution failure" << std::endl;
+			return false;
+		}
+		if (status != 0) {
+			env.skip = true;
+            std::cout << "INPUT: test item skipped: input maker script returned non-zero code and message: " << env.cmdline_args;
+			return false;
+		}
+    } else {
+        //--- cmdline
+        env.cmdline_args = load_key + " " + env.input_yaml;
+        env.cmdline_args += std::string(" ") + result_key + std::string(" ") + " result.%PSUBMIT_JOBID%.yaml";
+        if (conf_key != "") {
+            env.cmdline_args += std::string(" ") + conf_key + std::string(" ") + conf;
+        }
+        if (timeout_key != "" && testitem.get_timeout(pconf.first, pconf.second)) {
+            env.cmdline_args += std::string(" ") + timeout_key + std::string(" ") + 
+                                std::to_string(testitem.get_timeout(pconf.first, pconf.second));
+        }
+        char *aux_opts;
+        if ((aux_opts = getenv("MASSIVETEST_AUX_ARGS"))) {
+            env.cmdline_args += " " + std::string(aux_opts);
+        }
+        //--- /cmdline
     }
-    if (timeout_key != "" && testitem.get_timeout(pconf.first, pconf.second)) {
-        env.cmdline_args += std::string(" ") + timeout_key + std::string(" ") + 
-                            std::to_string(testitem.get_timeout(pconf.first, pconf.second));
-    }
-    char *aux_opts;
-    if ((aux_opts = getenv("MASSIVETEST_AUX_ARGS"))) {
-        env.cmdline_args += " " + std::string(aux_opts);
-    }
+
     auto &pr = input_maker_base<parallel_conf_t>::preproc;
     pr = testitem.preproc;
     subst(pr, "%WLD%", scope.workload_conf.first);
     subst(pr, "%CONF%", scope.workload_conf.second);
     subst(pr, "%WPRT%", scope.workparts[0].first);
+    subst(pr, "%WPRT_PARAM%", std::to_string(scope.workparts[0].second));
     subst(pr, "%NP%", std::to_string(pconf.first));
     subst(pr, "%PPN%", std::to_string(pconf.second));
 
@@ -187,8 +236,10 @@ void input_maker<parallel_conf_t>::make(const parallel_conf_t &pconf, execution_
     subst(po, "%WLD%", scope.workload_conf.first);
     subst(po, "%CONF%", scope.workload_conf.second);
     subst(po, "%WPRT%", scope.workparts[0].first);
+    subst(po, "%WPRT_PARAM%", std::to_string(scope.workparts[0].second));
     subst(po, "%NP%", std::to_string(pconf.first));
     subst(po, "%PPN%", std::to_string(pconf.second));
+    return cmdline_requires_additional_filling;
 }
 
 template <typename parallel_conf_t>

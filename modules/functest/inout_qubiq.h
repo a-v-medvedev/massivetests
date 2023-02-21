@@ -24,18 +24,24 @@ struct input_maker_qubiq : public input_maker<parallel_conf_t> {
     input_maker_qubiq(test_scope<traits> &_scope) : input_maker<parallel_conf_t>(_scope) {
         input_maker<parallel_conf_t>::load_key = "-yaml"; 
     }
-    virtual void make(const parallel_conf_t &pconf, execution_environment &env) override {
-        input_maker<parallel_conf_t>::make(pconf, env);
+    virtual bool make(const parallel_conf_t &pconf, execution_environment &env) override {
+        if (!input_maker<parallel_conf_t>::make(pconf, env)) {
+            return false;
+        }
+        /*
         auto &workload = scope.workload_conf.first;
+        
         if (testitem.get_skip_flag(workload, pconf.first, pconf.second)) {
             env.skip = true;
             return;
         }
+        */
         auto grid = scope.workparts[0].first;
         assert(grid.size() != 0);
         env.cmdline_args += std::string(" -grid ") + grid;
         env.cmdline_args += std::string(" -remove_decomp yes");
         env.cmdline_args += std::string(" -output_dir out.%PSUBMIT_JOBID%");
+        return true;
     }
 };
 
