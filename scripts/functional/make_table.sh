@@ -27,9 +27,12 @@ function parse_summary() {
             S=P=F=N=TACE=0
         }
         NF==4 && \$1!="#" { 
-            RESULT[\$1 " " \$2]=RESULT[\$1 " " \$2] " " \$3; 
+            IDX=\$1 " " \$2
+            if (RESULT[IDX] != "")
+               RESULT[IDX]=RESULT[IDX] "@"
+            RESULT[IDX]=RESULT[IDX] \$3; 
             if (\$4!="-") 
-                RESULT[\$1 " " \$2]=RESULT[\$1 " " \$2] "(#" \$4 ")"; 
+                RESULT[IDX]=RESULT[IDX] "(#" \$4 ")"; 
             if (\$3 == "S") S++;
             if (\$3 == "P") P++;
             if (\$3 == "F") F++;
@@ -43,9 +46,10 @@ function parse_summary() {
             print S " " P " " F " " N " " TACE >> ".stats.txt"
         }
 EOF
+    WIDTH=$(expr $(echo $submodes | wc -c))
     awk -f .parse.awk "$summary" > .table.txt
-    cat .table.txt | sort -k1,1n -k2,2n | awk '{$1=$2=$3="";gsub(/[ ]*/,""); printf "%-12s:\n", $0;}' > "$table"
-    awk -v "s=$submodes" 'END { printf("%-12s:\n", s); }' >> "$table" < /dev/null
+    cat .table.txt | sort -k1,1n -k2,2n | awk -v WIDTH=$WIDTH -F'[ :]' '{$1=$2="";gsub(/[ ]*/,""); gsub(/@/,"  "); printf "%-" WIDTH "s :\n", $0;}' > "$table"
+    awk -v "s=$submodes" -v "WIDTH=$WIDTH" 'END { printf("%-" WIDTH "s :\n", s); }' >> "$table" < /dev/null
     rm -f .parse.awk .table.txt
 }
 
@@ -56,7 +60,7 @@ for wld in $WORKLOADS; do
     n=1
     for src in sum.*/out.summary.$wld; do  
         if [ -z "$made_first_column" ]; then
-            cat $src | awk 'NF==4 && $1!="#" { printf "%-8s%-24s:\n", $1, $2 }' | sort -k1,1n -k2,2n > table.$wld.0
+            cat $src | awk 'NF==4 && $1!="#" { printf "%-8s%-24s:\n", $1, $2 }' | sort -k1,1n -k2,2n | uniq > table.$wld.0
             echo -e "# nnodes workpart               :" >> table.$wld.0
             made_first_column="yes"
         fi
