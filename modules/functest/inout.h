@@ -164,7 +164,7 @@ struct test_item_t {
 		return default_tolerance;
 	}
 
-    unsigned get_timeout(int n, int ppn = 1) {
+    unsigned get_timeout(int n, int ppn = 1) const {
         if (timeout != 0) {
             return timeout;
         }
@@ -172,10 +172,10 @@ struct test_item_t {
         std::pair<int, int> zero(0, 0);
         std::pair<int, int> id(n, ppn);
 		if (timeout_variations.find(zero) != timeout_variations.end()) {
-			default_timeout = timeout_variations[zero];
+			default_timeout = timeout_variations.find(zero)->second;
 		}
 		if (timeout_variations.find(id) != timeout_variations.end()) {
-			return timeout_variations[id];
+			return timeout_variations.find(id)->second;
 		}
 		return default_timeout;
     }

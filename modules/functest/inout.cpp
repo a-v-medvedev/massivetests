@@ -96,31 +96,17 @@ input_maker<parallel_conf_t>::input_maker(test_scope<functest::traits> &_scope)
 	testitem.load(item);
 }
 
-/*
-void input_maker::write_out(const std::string &input_file_name) {
-    (void)input_file_name;
-    if (was_written)
-        return;
-   
-    std::ofstream ofs(input_file_name);
-    YAML::Emitter out;
-    out << YAML::BeginDoc;
-    out << YAML::BeginMap;
-    out << YAML::Flow;
-
-    YAML_OUT("version", 0);
-    YAML_OUT("parameter", 10);
-
-    out << YAML::EndMap;
-    out << YAML::EndDoc;
-    ofs << out.c_str();
-    
-    was_written = true;
-}
-*/
-
 static inline void subst(std::string &str, const std::string &pattern, const std::string &substitute) {
     str = std::regex_replace(str, std::regex(pattern), substitute);
+}
+
+static inline void subst(std::string &str, char pattern, char substitute) {
+	size_t pos = 0;
+	std::string str_substitute(1, substitute);
+	while ((pos = str.find(pattern, pos)) != std::string::npos) {
+		str.replace(pos, 1, str_substitute);
+		pos += 1; // skip the replaced character
+	}    
 }
 
 template <typename parallel_conf_t>
@@ -132,13 +118,13 @@ bool file_exist(test_scope<functest::traits> &scope, parallel_conf_t &pconf, con
     subst(file, "%WPRT_PARAM%", std::to_string(scope.workparts[0].second));
     subst(file, "%NP%", std::to_string(pconf.first));
     subst(file, "%PPN%", std::to_string(pconf.second));
-    //std::cout << ">> " << file << std::endl;
 	struct stat r;   
   	return (stat (file.c_str(), &r) == 0);
 }
 
 template <typename parallel_conf_t>
-bool exec_shell_command(test_scope<functest::traits> &scope, parallel_conf_t &pconf, const std::string &script,
+bool exec_shell_command(test_scope<functest::traits> &scope, parallel_conf_t &pconf, const test_item_t &testitem, 
+                        const std::string &script,
                         std::string &result, int &status) {
 	std::string command = script + " ";
 	command += std::string("WLD=") + scope.workload_conf.first + " ";
@@ -147,10 +133,13 @@ bool exec_shell_command(test_scope<functest::traits> &scope, parallel_conf_t &pc
 	command += std::string("WPRT_PARAM=") + std::to_string(scope.workparts[0].second) + " ";
 	command += std::string("NP=") + std::to_string(pconf.first) + " ";
 	command += std::string("PPN=") + std::to_string(pconf.second) + " ";
-	//command += std::string("TIMEOUT=") + std::to_string(pconf.second) + " ";
-	//testitems.get_timeout(pconf.first, pconf.second);
-	// testitem.base -> 
-
+	auto timeout = testitem.get_timeout(pconf.first, pconf.second);
+	command += std::string("TIMEOUT=") + std::to_string(timeout) + " ";
+    for (const auto &kv : testitem.base) {
+        std::string replaced(kv.first);
+		subst(replaced, "/", "_");
+        command += std::string("TESTITEM__") + replaced + "=" + std::to_string(kv.second) + " ";
+    }
     char buffer[128]; // buffer to read the command's output
     FILE* pipe = popen(command.c_str(), "r"); // open a pipe to the command
     if (!pipe) {
@@ -200,19 +189,19 @@ bool input_maker<parallel_conf_t>::make(const parallel_conf_t &pconf, execution_
     env.input_yaml = "./input_" + workload + ".yaml";
 
     bool cmdline_requires_additional_filling = true;
-    const std::string input_maker_script = "input_make_cmdline.sh";
+    const std::string input_maker_script = "./input_maker_cmdline.sh";
     if (file_exists(input_maker_script) && file_is_exec(input_maker_script)) {
         cmdline_requires_additional_filling = false;
 		int status = -1;
-        bool result = exec_shell_command(scope, pconf, input_maker_script, env.cmdline_args, status);
+        bool result = exec_shell_command(scope, pconf, testitem, input_maker_script + " 2>&1", env.cmdline_args, status);
 		if (!result) {
-			env.holdover = true;
-			env.holdover_reason = "The cmdline forming script execution failed: " + input_maker_script;
+			env.skip = true;
+            std::cout << "INPUT: input maker script execution failure" << std::endl;
 			return false;
 		}
 		if (status != 0) {
-			env.holdover = true;
-			env.holdover_reason = "The cmdline forming script returned non-zero: " + std::to_string(status);
+			env.skip = true;
+            std::cout << "INPUT: test item skipped: input maker script returned non-zero code and message: " << env.cmdline_args;
 			return false;
 		}
     } else {
@@ -230,8 +219,8 @@ bool input_maker<parallel_conf_t>::make(const parallel_conf_t &pconf, execution_
         if ((aux_opts = getenv("MASSIVETEST_AUX_ARGS"))) {
             env.cmdline_args += " " + std::string(aux_opts);
         }
+        //--- /cmdline
     }
-    //--- /cmdline
 
     auto &pr = input_maker_base<parallel_conf_t>::preproc;
     pr = testitem.preproc;
