@@ -38,7 +38,7 @@ function is_bash_func_declared() {
 }
 
 function check_bash_func_declared() {
-    is_bash_func_declared || fatal "$1 bash function is not defined!"
+    is_bash_func_declared  "$1" || fatal "$1 bash function is not defined!"
 }
 
 function zip_X1() {

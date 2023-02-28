@@ -38,8 +38,8 @@ mkdir summary
 for mode in $MODES; do
     for submode in $SUBMODES; do
         CONF=conf.${mode}_${submode}
-        export MASSIVE_TESTS_TESTITEM_MODE=$MODE
-        export MASSIVE_TESTS_TESTITEM_SUBMODE=$SUBMODE
+        export MASSIVE_TESTS_TESTITEM_MODE=$mode
+        export MASSIVE_TESTS_TESTITEM_SUBMODE=$submode
         if is_bash_func_declared set_specific_params; then 
             set_specific_params "$mode" "$submode"
         fi
