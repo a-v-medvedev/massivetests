@@ -58,15 +58,6 @@ namespace functest {
 
 enum status_t { P=0, F=1, N=2, S=3, T=4, A=5, C=6, E=7 };
 
-
-static bool file_exists(const std::string &file) {
-    return access(file.c_str(), F_OK) == 0;
-}
-
-static bool file_is_exec(const std::string &file) {
-    return access(file.c_str(), X_OK) == 0;
-}
-
 static const std::string status_to_string(status_t st) {
     switch (st) {
         case status_t::P: return "P";
@@ -96,48 +87,37 @@ input_maker<parallel_conf_t>::input_maker(test_scope<functest::traits> &_scope)
 	testitem.load(item);
 }
 
-static inline void subst(std::string &str, const std::string &pattern, const std::string &substitute) {
-    str = std::regex_replace(str, std::regex(pattern), substitute);
-}
-
-static inline void subst(std::string &str, char pattern, char substitute) {
-	size_t pos = 0;
-	std::string str_substitute(1, substitute);
-	while ((pos = str.find(pattern, pos)) != std::string::npos) {
-		str.replace(pos, 1, str_substitute);
-		pos += 1; // skip the replaced character
-	}    
+template <typename parallel_conf_t>
+void input_maker<parallel_conf_t>::do_substs(const parallel_conf_t &pconf, std::string &filename) {
+    helpers::subst(filename, "%WLD%", scope.workload_conf.first);
+    helpers::subst(filename, "%CONF%", scope.workload_conf.second);
+    helpers::subst(filename, "%WPRT%", scope.workparts[0].first);
+    helpers::subst(filename, "%WPRT_PARAM%", std::to_string(scope.workparts[0].second));
+    helpers::subst(filename, "%NP%", std::to_string(pconf.first));
+    helpers::subst(filename, "%PPN%", std::to_string(pconf.second));
 }
 
 template <typename parallel_conf_t>
-bool file_exist(test_scope<functest::traits> &scope, parallel_conf_t &pconf, const std::string &_file) {
-    std::string file = _file;
-    subst(file, "%WLD%", scope.workload_conf.first);
-    subst(file, "%CONF%", scope.workload_conf.second);
-    subst(file, "%WPRT%", scope.workparts[0].first);
-    subst(file, "%WPRT_PARAM%", std::to_string(scope.workparts[0].second));
-    subst(file, "%NP%", std::to_string(pconf.first));
-    subst(file, "%PPN%", std::to_string(pconf.second));
+bool input_maker<parallel_conf_t>::file_exists(const parallel_conf_t &pconf, const std::string &filename_) {
+    std::string filename = filename_;
+	do_substs(pconf, filename);
 	struct stat r;   
-  	return (stat (file.c_str(), &r) == 0);
+  	return (stat(filename.c_str(), &r) == 0);
 }
 
 template <typename parallel_conf_t>
-bool exec_shell_command(test_scope<functest::traits> &scope, parallel_conf_t &pconf, const test_item_t &testitem, 
-                        const std::string &script,
-                        std::string &result, int &status) {
+bool input_maker<parallel_conf_t>::exec_shell_command(const parallel_conf_t &pconf, const test_item_t &testitem, 
+                                                      const std::string &script, const std::vector<std::string> &exports,
+                                                      std::string &result, int &status) {
 	std::string command = script + " ";
-	command += std::string("WLD=") + scope.workload_conf.first + " ";
-	command += std::string("CONF=") + scope.workload_conf.second + " ";
-	command += std::string("WPRT=") + scope.workparts[0].first + " ";
-	command += std::string("WPRT_PARAM=") + std::to_string(scope.workparts[0].second) + " ";
-	command += std::string("NP=") + std::to_string(pconf.first) + " ";
-	command += std::string("PPN=") + std::to_string(pconf.second) + " ";
+    for (const auto &v : exports) {
+        command += v + " ";
+    }
 	auto timeout = testitem.get_timeout(pconf.first, pconf.second);
 	command += std::string("TIMEOUT=") + std::to_string(timeout) + " ";
     for (const auto &kv : testitem.base) {
         std::string replaced(kv.first);
-		subst(replaced, "/", "_");
+        helpers::subst(replaced, "/", "_");
         command += std::string("TESTITEM__") + replaced + "=" + std::to_string(kv.second) + " ";
     }
     char buffer[128]; // buffer to read the command's output
@@ -168,7 +148,7 @@ bool input_maker<parallel_conf_t>::make(const parallel_conf_t &pconf, execution_
     if (testitem.get_prerequisites(prereq)) {
         for (const auto &elem : prereq) {
             from = elem.first;
-            if (!file_exist(scope, pconf, from)) {
+            if (!file_exists(pconf, from)) {
 #ifdef DEBUG                
                 std::cout << ">> functest: prerequisite testing: object doesn't exist: " << from << std::endl;
 #endif                
@@ -181,19 +161,26 @@ bool input_maker<parallel_conf_t>::make(const parallel_conf_t &pconf, execution_
             env.holdover_reason = "Prerequisite object not found: " + from;
         }
     }
-    if (conf == "X") {
+    if (helpers::file_exists("./psubmit.opt") || conf == "X") {
         env.psubmit_options = "./psubmit.opt";
-    } else {
+    } else { 
         env.psubmit_options = "./psubmit_" + conf + ".opt";
     }
     env.input_yaml = "./input_" + workload + ".yaml";
 
+    auto &exports = env.exports;
+	for (const auto v : {"WLD", "CONF", "WPRT", "WPRT_PARAM", "NP", "PPN"}) {
+		std::string s = std::string("MASSIVE_TESTS_TESTITEM_") + v + "=" + "%" + v + "%";
+		do_substs(pconf, s);
+		exports.push_back(s);
+    } 
+
     bool cmdline_requires_additional_filling = true;
     const std::string input_maker_script = "./input_maker_cmdline.sh";
-    if (file_exists(input_maker_script) && file_is_exec(input_maker_script)) {
+    if (helpers::file_exists(input_maker_script) && helpers::file_is_exec(input_maker_script)) {
         cmdline_requires_additional_filling = false;
 		int status = -1;
-        bool result = exec_shell_command(scope, pconf, testitem, input_maker_script + " 2>&1", env.cmdline_args, status);
+        bool result = exec_shell_command(pconf, testitem, input_maker_script + " 2>&1", env.exports, env.cmdline_args, status);
 		if (!result) {
 			env.skip = true;
             std::cout << "INPUT: input maker script execution failure" << std::endl;
@@ -224,21 +211,15 @@ bool input_maker<parallel_conf_t>::make(const parallel_conf_t &pconf, execution_
 
     auto &pr = input_maker_base<parallel_conf_t>::preproc;
     pr = testitem.preproc;
-    subst(pr, "%WLD%", scope.workload_conf.first);
-    subst(pr, "%CONF%", scope.workload_conf.second);
-    subst(pr, "%WPRT%", scope.workparts[0].first);
-    subst(pr, "%WPRT_PARAM%", std::to_string(scope.workparts[0].second));
-    subst(pr, "%NP%", std::to_string(pconf.first));
-    subst(pr, "%PPN%", std::to_string(pconf.second));
+	do_substs(pconf, pr);
 
     auto &po = input_maker_base<parallel_conf_t>::postproc;
     po = testitem.postproc;
-    subst(po, "%WLD%", scope.workload_conf.first);
-    subst(po, "%CONF%", scope.workload_conf.second);
-    subst(po, "%WPRT%", scope.workparts[0].first);
-    subst(po, "%WPRT_PARAM%", std::to_string(scope.workparts[0].second));
-    subst(po, "%NP%", std::to_string(pconf.first));
-    subst(po, "%PPN%", std::to_string(pconf.second));
+	do_substs(pconf, po);
+
+	env.postproc = po;
+	env.preproc = pr;
+	
     return cmdline_requires_additional_filling;
 }
 
