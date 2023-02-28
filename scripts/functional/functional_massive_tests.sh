@@ -24,7 +24,6 @@ init_env
 source ./params.inc
 source ./modeset.inc
 
-check_bash_func_declared set_specific_params
 
 MASSIVE_TESTS_WORKLOADS="$WORKLOADS"
 MASSIVE_TESTS_CONFS="$CONFS"
@@ -39,7 +38,11 @@ mkdir summary
 for mode in $MODES; do
     for submode in $SUBMODES; do
         CONF=conf.${mode}_${submode}
-        set_specific_params "$mode" "$submode"
+        export MASSIVE_TESTS_TESTITEM_MODE=$MODE
+        export MASSIVE_TESTS_TESTITEM_SUBMODE=$SUBMODE
+        if is_bash_func_declared set_specific_params; then 
+            set_specific_params "$mode" "$submode"
+        fi
         massivetest-run
         move_results "$CONF"
         ./extract.sh "$CONF" "$TUPLE" "$MASSIVE_TESTS_KEYWORDS" "$MASSIVE_TESTS_SIZEKEYWORD" > "out.$CONF" && true

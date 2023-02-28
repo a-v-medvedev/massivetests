@@ -33,8 +33,12 @@ function info() {
     echo "$str"
 }
 
+function is_bash_func_declared() {
+    [ `type -t $1`"" == 'function' ]
+}
+
 function check_bash_func_declared() {
-    [ `type -t $1`"" == 'function' ] || fatal "$1 bash function is not defined!"
+    is_bash_func_declared || fatal "$1 bash function is not defined!"
 }
 
 function zip_X1() {
