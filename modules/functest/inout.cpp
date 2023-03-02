@@ -107,10 +107,9 @@ bool input_maker<parallel_conf_t>::file_exists(const parallel_conf_t &pconf, con
 
 template <typename parallel_conf_t>
 bool input_maker<parallel_conf_t>::exec_shell_command(const parallel_conf_t &pconf, const test_item_t &testitem, 
-                                                      const std::string &script,
+                                                      const std::string &script, const std::vector<std::string> &exports,
                                                       std::string &result, int &status) {
 	std::string command = script + " ";
-    auto &exports = env.exports;
     for (const auto &v : exports) {
         command += v + " ";
     }
@@ -181,7 +180,7 @@ bool input_maker<parallel_conf_t>::make(const parallel_conf_t &pconf, execution_
     if (helpers::file_exists(input_maker_script) && helpers::file_is_exec(input_maker_script)) {
         cmdline_requires_additional_filling = false;
 		int status = -1;
-        bool result = exec_shell_command(pconf, testitem, input_maker_script + " 2>&1", env.cmdline_args, status);
+        bool result = exec_shell_command(pconf, testitem, input_maker_script + " 2>&1", env.exports, env.cmdline_args, status);
 		if (!result) {
 			env.skip = true;
             std::cout << "INPUT: input maker script execution failure" << std::endl;

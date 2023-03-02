@@ -295,7 +295,8 @@ struct input_maker : public input_maker_base<parallel_conf_t> {
 	void do_substs(const parallel_conf_t &pconf, std::string &filename);
 	bool file_exists(const parallel_conf_t &pconf, const std::string &filename_);
 	bool exec_shell_command(const parallel_conf_t &pconf, const test_item_t &testitem,
-                            const std::string &script, std::string &result, int &status);
+                            const std::string &script, const std::vector<std::string> &exports, 
+                            std::string &result, int &status);
 };
 
 template <typename parallel_conf_t>
