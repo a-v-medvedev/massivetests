@@ -60,6 +60,9 @@ done
 ./make_table.sh "$TUPLE" || exit 1 && true
 
 touch references.txt
-cp -f stats.txt references.txt table.* test_items*yaml input_*.yaml summary/ || exit 1 && true
+cp -f stats.txt references.txt table.* test_items*yaml summary/ || exit 1 && true
+if [ $(ls -1d input_*.yaml 2>/dev/null | wc -l) != "0" ]; then
+    cp -f inout_*.yaml || exit 1 && true
+fi
 
 

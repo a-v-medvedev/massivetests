@@ -164,7 +164,7 @@ function move_results() {
     rm -rf "$DIR"
     mkdir "$DIR"
     mv results.* "$DIR"
-    cp input*.yaml "$DIR"
+    [ $(ls -1d input*.yaml 2>/dev/null | wc -l) == "0" ] || cp input*.yaml "$DIR"
     mv output_initial.yaml "$DIR"/output.yaml
 }
 
