@@ -26,11 +26,33 @@
 #include <sstream>
 #include <iomanip>
 #include <algorithm>
+#include <regex>
 #include <unistd.h>
 #include <assert.h>
 #include "argsparser.h"
 
 namespace helpers {
+
+static inline bool file_exists(const std::string &file) {
+    return access(file.c_str(), F_OK) == 0;
+}
+
+static inline bool file_is_exec(const std::string &file) {
+    return access(file.c_str(), X_OK) == 0;
+}
+
+static inline void subst(std::string &str, const std::string &pattern, const std::string &substitute) {
+    str = std::regex_replace(str, std::regex(pattern), substitute);
+}
+
+static inline void subst(std::string &str, char pattern, char substitute) {
+    size_t pos = 0;
+    std::string str_substitute(1, substitute);
+    while ((pos = str.find(pattern, pos)) != std::string::npos) {
+        str.replace(pos, 1, str_substitute);
+        pos += 1; // skip the replaced character
+    }
+}
 
 static inline std::vector<std::string> str_split(const std::string &s, char delimiter) {
     std::vector<std::string> result;
