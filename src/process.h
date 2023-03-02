@@ -28,6 +28,45 @@
 #include <sys/wait.h>
 #include <assert.h>
 
+#include <cstdlib>
+#include <cstring>
+#include <string>
+#include <vector>
+#include <sys/stat.h>
+
+static inline std::string which(const std::string& command) {
+    static std::vector<std::string> dirs;
+    if (dirs.empty()) {
+	    const char *path = std::getenv("PATH");
+    	if (path == nullptr) {
+	        dirs.push_back(".");
+    	} else {
+			const char *start = path;
+			while (*start != '\0') {
+				const char *end = start;
+				while (*end != '\0' && *end != ':') {
+					end++;
+				}
+				if (end > start) {
+					dirs.emplace_back(start, end - start);
+				}
+				if (*end == ':') {
+					end++;
+				}
+				start = end;
+			}
+		}
+	}
+    for (const auto& dir : dirs) {
+        std::string fullpath = dir + "/" + command;
+        struct stat st;
+        if (stat(fullpath.c_str(), &st) == 0 && (st.st_mode & S_IXUSR)) {
+            return fullpath;
+        }
+    }
+    return "";
+}
+
 struct execution_environment {
     std::string input_yaml;
     std::string psubmit_options;
@@ -59,7 +98,11 @@ struct execution_environment {
             envp.push_back(v.c_str());
         }
         envp.push_back(nullptr);
-        execle(executable.c_str(), executable.c_str(), 
+		auto full_executable = which(executable);
+		if (full_executable.empty()) {
+			throw std::runtime_error(std::string("exec: can't find file or it has no execution permissions: " + executable));
+		}
+        execle(full_executable.c_str(), executable.c_str(), 
                 "-n", std::to_string(pconf.first).c_str(), 
                 "-p", std::to_string(pconf.second).c_str(), 
                 "-o", psubmit_options.c_str(), 
