@@ -48,7 +48,7 @@ struct execution_environment {
     std::string executable = "psubmit.sh";
     template <typename parallel_conf_t> 
     void exec(const parallel_conf_t &pconf) const {
-        std::cout << "execle: " << executable << " " << executable << " "
+        std::cout << "execlp: " << executable << " " << executable << " "
                   << "-n"
                   << " " << std::to_string(pconf.first) << " "
                   << "-p"
@@ -63,26 +63,22 @@ struct execution_environment {
                   << " " << postproc << " "
                   << std::endl;
 
-        std::cout << "env: " << getenv("MASSIVE_TESTS_TESTITEM_MODE") << std::endl;
-
-        std::vector<const char *> envp;
         for (const auto &v : exports) {
-            envp.push_back(v.c_str());
+            auto kv = helpers::str_split(v, '=');
+            setenv(kv[0].c_str(), kv[1].c_str(), 1);
         }
-        envp.push_back(nullptr);
 		auto full_executable = helpers::which(executable);
 		if (full_executable.empty()) {
 			throw std::runtime_error(std::string("exec: can't find file or it has no execution permissions: " + executable));
 		}
-        execle(full_executable.c_str(), executable.c_str(), 
+        execlp(full_executable.c_str(), executable.c_str(), 
                 "-n", std::to_string(pconf.first).c_str(), 
                 "-p", std::to_string(pconf.second).c_str(), 
                 "-o", psubmit_options.c_str(), 
                 "-a", cmdline_args.c_str(),
                 "-b", preproc.c_str(),
                 "-f", postproc.c_str(),
-                (char *)nullptr,
-                &envp[0]);
+                (char *)nullptr);
     }
     std::string to_string() {
         std::stringstream ss;
@@ -150,7 +146,7 @@ struct process {
             dup2(pipe_fd[1], STDOUT_FILENO);
             dup2(pipe_fd[1], STDERR_FILENO);
             env.exec<parallel_conf_t>(pconf); //, preproc, postproc, exports);
-            std::cout << "execle failed! " << strerror(errno) << std::endl;
+            std::cout << "execlp failed! " << strerror(errno) << std::endl;
             exit(1);
         }
         // Parent

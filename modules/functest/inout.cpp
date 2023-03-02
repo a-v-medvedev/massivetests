@@ -110,12 +110,10 @@ bool input_maker<parallel_conf_t>::exec_shell_command(const parallel_conf_t &pco
                                                       const std::string &script,
                                                       std::string &result, int &status) {
 	std::string command = script + " ";
-	command += std::string("WLD=") + scope.workload_conf.first + " ";
-	command += std::string("CONF=") + scope.workload_conf.second + " ";
-	command += std::string("WPRT=") + scope.workparts[0].first + " ";
-	command += std::string("WPRT_PARAM=") + std::to_string(scope.workparts[0].second) + " ";
-	command += std::string("NP=") + std::to_string(pconf.first) + " ";
-	command += std::string("PPN=") + std::to_string(pconf.second) + " ";
+    auto &exports = env.exports;
+    for (const auto &v : exports) {
+        command += v + " ";
+    }
 	auto timeout = testitem.get_timeout(pconf.first, pconf.second);
 	command += std::string("TIMEOUT=") + std::to_string(timeout) + " ";
     for (const auto &kv : testitem.base) {
@@ -171,6 +169,13 @@ bool input_maker<parallel_conf_t>::make(const parallel_conf_t &pconf, execution_
     }
     env.input_yaml = "./input_" + workload + ".yaml";
 
+    auto &exports = env.exports;
+	for (const auto v : {"WLD", "CONF", "WPRT", "WPRT_PARAM", "NP", "PPN"}) {
+		std::string s = std::string("MASSIVE_TESTS_TESTITEM_") + v + "=" + "%" + v + "%";
+		do_substs(pconf, s);
+		exports.push_back(s);
+    } 
+
     bool cmdline_requires_additional_filling = true;
     const std::string input_maker_script = "./input_maker_cmdline.sh";
     if (helpers::file_exists(input_maker_script) && helpers::file_is_exec(input_maker_script)) {
@@ -216,12 +221,6 @@ bool input_maker<parallel_conf_t>::make(const parallel_conf_t &pconf, execution_
 	env.postproc = po;
 	env.preproc = pr;
 	
-	auto &exports = env.exports;
-	for (const auto v : {"WLD", "CONF", "WPRT", "WPRT_PARAM", "NP", "PPN"}) {
-		std::string s = std::string("MASSIVE_TESTS_TESTITEM_") + v + "=" + "%" + v + "%";
-		do_substs(pconf, s);
-		exports.push_back(s);
-    } 
     return cmdline_requires_additional_filling;
 }
 

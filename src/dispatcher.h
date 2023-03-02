@@ -80,17 +80,7 @@ struct dispatcher {
                 break;
             std::shared_ptr<process<typename TRAITS::parallel_conf_t>> proc = waiting_processes[0];
             proc->create_environment();
-            //execution_environment env;
-            //auto &im = proc->im;
-            //im->make(proc->pconf, env);
-            /*
-            if (im->preproc != "")
-                proc->preproc = im->preproc;
-            if (im->postproc != "")
-                proc->postproc = im->postproc;
-                */
             if (proc->env.holdover) {
-                //proc->env = env;
                 waiting_processes.erase(waiting_processes.begin());
                 waiting_processes.push_back(proc);
                 nholdover = 0;
