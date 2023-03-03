@@ -52,8 +52,12 @@ EOF
         { 
           str="" 
           for (i=4;i<=NF;i++) {
-              sub(/[ ]*/, "", \$i)
-              fld=sprintf("%-7s",\$i)
+              item=\$i
+              sub(/[ ]*/, "", item)
+              if (item=="P") item="PASSD"
+              if (item=="S") item="SKIPD"
+              if (item=="N") item="NORES"
+              fld=sprintf("%-7s",item)
               str=str fld
           }
           printf "%-" WIDTH "s :\n", str;
