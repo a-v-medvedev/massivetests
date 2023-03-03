@@ -22,7 +22,7 @@ source ./massive_tests.inc
 init_env
 
 source ./params.inc
-source ./modeset.inc
+[ -e modeset.inc ] && source ./modeset.inc
 
 
 MASSIVE_TESTS_WORKLOADS="$WORKLOADS"
