@@ -79,8 +79,15 @@ struct dispatcher {
             if (waiting_processes.size() == 0)
                 break;
             std::shared_ptr<process<typename TRAITS::parallel_conf_t>> proc = waiting_processes[0];
-            proc->create_environment();
-            if (proc->env.holdover) {
+            execution_environment env;
+            auto &im = proc->im;
+            im->make(proc->pconf, env);
+            if (im->preproc != "")
+                proc->preproc = im->preproc;
+            if (im->postproc != "")
+                proc->postproc = im->postproc;
+            if (env.holdover) {
+                proc->env = env;
                 waiting_processes.erase(waiting_processes.begin());
                 waiting_processes.push_back(proc);
                 nholdover = 0;
@@ -109,9 +116,10 @@ struct dispatcher {
                         std::cout << ">> LIMIT: all in holover: " << ntimesinfullholdover << " times seen, waiting_processes.size()=" << waiting_processes.size() << std::endl;
 #endif                        
                         for (const auto &p : waiting_processes) {
-                            p->env.holdover = false;
-                            p->env.skip = true;
-                            p->start();
+                            auto &e = p->env;
+                            e.holdover = false;
+                            e.skip = true;
+                            p->start(e);
                             processes.push_back(p);
                         }
                         std::cout << "DISPATCHER: all waiting process are in holdover state: now marked " << waiting_processes.size() << " processes as skipped" << std::endl;                     
@@ -129,9 +137,9 @@ struct dispatcher {
             }
 #if DEBUG  // FIXME consider making this output a command-line switchable option
             std::cout << ">> dispatcher: start: {" << TRAITS::parallel_conf_to_string(proc->pconf) << "} "
-                      << p->env.to_string() << std::endl; 
+                      << env.to_string() << std::endl; 
 #endif
-            proc->start();
+            proc->start(env);
             processes.push_back(proc);
             waiting_processes.erase(waiting_processes.begin());
             if (check_if_all_finished())
