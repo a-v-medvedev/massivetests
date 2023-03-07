@@ -62,7 +62,7 @@ done
 touch references.txt
 cp -f stats.txt references.txt table.* test_items*yaml summary/ || exit 1 && true
 if [ $(ls -1d input_*.yaml 2>/dev/null | wc -l) != "0" ]; then
-    cp -f input_*.yaml || exit 1 && true
+    cp -f input_*.yaml summary/ || exit 1 && true
 fi
 
 
