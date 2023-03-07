@@ -22,6 +22,7 @@ function parse_summary() {
     local summary="$1"
     local table="$2"
     local submodes="$3"
+    local nsubmodes="$4"
     cat > .parse.awk <<EOF
         BEGIN {
             S=P=F=N=TACE=0
@@ -29,7 +30,7 @@ function parse_summary() {
         NF==4 && \$1!="#" { 
             IDX=\$1 " " \$2
             if (RESULT[IDX] != "")
-               RESULT[IDX]=RESULT[IDX] "@"
+               RESULT[IDX]=RESULT[IDX] "%"
             RESULT[IDX]=RESULT[IDX] \$3; 
             if (\$4!="-") 
                 RESULT[IDX]=RESULT[IDX] "(#" \$4 ")"; 
@@ -46,11 +47,29 @@ function parse_summary() {
             print S " " P " " F " " N " " TACE >> ".stats.txt"
         }
 EOF
+              #sub(/@/,"", \$i)
+    cat > .format.awk <<EOF
+        { 
+          str="" 
+          for (i=4;i<=NF;i++) {
+              item=\$i
+              sub(/[ ]*/, "", item)
+              if (item=="P") item="PASSD"
+              if (item=="S") item="SKIPD"
+              if (item=="N") item="NORES"
+              fld=sprintf("%-7s",item)
+              str=str fld
+          }
+          printf "%-" WIDTH "s :\n", str;
+        }
+EOF
     WIDTH=$(expr $(echo $submodes | wc -c))
+    WIDTH2=$(expr "$nsubmodes" \* 7 + 1)
+    [ "$WIDTH2" -gt "$WIDTH" ] && WIDTH=$WIDTH2
     awk -f .parse.awk "$summary" > .table.txt
-    cat .table.txt | sort -k1,1n -k2,2n | awk -v WIDTH=$WIDTH -F'[ :]' '{$1=$2="";gsub(/[ ]*/,""); gsub(/@/,"  "); printf "%-" WIDTH "s :\n", $0;}' > "$table"
+    cat .table.txt | sort -k1,1n -k2,2n | awk -v WIDTH=$WIDTH -F'[ :%]' -f .format.awk > "$table"
     awk -v "s=$submodes" -v "WIDTH=$WIDTH" 'END { printf("%-" WIDTH "s :\n", s); }' >> "$table" < /dev/null
-    rm -f .parse.awk .table.txt
+    rm -f .parse.awk .format.awk .table.txt
 }
 
 cat /dev/null > .stats.txt
@@ -65,8 +84,9 @@ for wld in $WORKLOADS; do
             made_first_column="yes"
         fi
         submodes=$(grep '^#' $src | sed 's/# //')
+        nsubmodes=$(echo $submodes | wc -w)
         sm=$(echo -e "$src (${submodes})" | sed 's/^sum\.conf.//;s!/out.summary[^ ]*!!')
-        parse_summary "$src" "table.$wld.$n" "$sm"
+        parse_summary "$src" "table.$wld.$n" "$sm" "$nsubmodes"
         n=$(expr $n \+ 1)
     done
     paste -d ' ' table.$wld.* > table.$wld

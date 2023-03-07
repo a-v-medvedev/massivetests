@@ -28,17 +28,26 @@
 #include <sys/wait.h>
 #include <assert.h>
 
+#include <cstdlib>
+#include <cstring>
+#include <string>
+#include <vector>
+#include <sys/stat.h>
+
+#include "helpers.h"
+
 struct execution_environment {
     std::string input_yaml;
     std::string psubmit_options;
     std::string cmdline_args;
-    bool skip;
-    bool holdover;
+    std::string preproc, postproc;
+    std::vector<std::string> exports;
+    bool skip = false;
+    bool holdover = false;
     std::string holdover_reason;
-    std::string executable; //= "psubmit.sh";
-    execution_environment() : skip(false), holdover(false), executable("psubmit.sh") {}
+    std::string executable = "psubmit.sh";
     template <typename parallel_conf_t> 
-    void exec(const parallel_conf_t &pconf, const std::string &preproc, const std::string &postproc) {
+    void exec(const parallel_conf_t &pconf) const {
         std::cout << "execlp: " << executable << " " << executable << " "
                   << "-n"
                   << " " << std::to_string(pconf.first) << " "
@@ -53,7 +62,16 @@ struct execution_environment {
                   << "-f"
                   << " " << postproc << " "
                   << std::endl;
-        execlp(executable.c_str(), executable.c_str(), 
+
+        for (const auto &v : exports) {
+            auto kv = helpers::str_split(v, '=');
+            setenv(kv[0].c_str(), kv[1].c_str(), 1);
+        }
+		auto full_executable = helpers::which(executable);
+		if (full_executable.empty()) {
+			throw std::runtime_error(std::string("exec: can't find file or it has no execution permissions: " + executable));
+		}
+        execlp(full_executable.c_str(), executable.c_str(), 
                 "-n", std::to_string(pconf.first).c_str(), 
                 "-p", std::to_string(pconf.second).c_str(), 
                 "-o", psubmit_options.c_str(), 
@@ -64,17 +82,20 @@ struct execution_environment {
     }
     std::string to_string() {
         std::stringstream ss;
-        ss << "input=" << input_yaml << " " <<
-              "psubmit_options=" << psubmit_options << " " <<
-              "args={" << cmdline_args << "}";
+        if (!input_yaml.empty()) {  // FIXME input_yaml field seems to be redundant
+            ss << "input=" << input_yaml << " ";
+        }
+        ss << "psubmit_options=" << psubmit_options << " ";
+        ss << "args={" << cmdline_args << "}";
         return ss.str();
     }
     void parse_line(const std::string &line_from_child, std::string &state, int &jobid) {
         {
             char a1[128], a2[128], a3[128];
             int n = sscanf(line_from_child.c_str(), "%s %s %s\n", a1, a2, a3);
-            if (n == 3 && !strcmp(a1, "Job") && !strcmp(a2, "status:"))
+            if (n == 3 && !strcmp(a1, "Job") && !strcmp(a2, "status:")) {
                 state = a3;
+            }
         }
 
         {
@@ -92,7 +113,6 @@ template <typename parallel_conf_t>
 struct process {
     parallel_conf_t pconf;
     execution_environment env;
-    std::string preproc, postproc;
     pid_t pid = 0;
     int jobid = -1;
     int retval = 0;
@@ -108,8 +128,10 @@ struct process {
             std::shared_ptr<output_maker_base<parallel_conf_t>> _output_maker)
         : pconf(_pconf), im(_input_maker), om(_output_maker) {}
 
-    void start(const execution_environment &_env) {
-        env = _env;
+    void create_environment() {
+		im->make(pconf, env);
+    }
+    void start() {
         if (env.skip) {
             state = "FINISHED";
             pid = 0;
@@ -123,7 +145,7 @@ struct process {
             close(pipe_fd[0]);
             dup2(pipe_fd[1], STDOUT_FILENO);
             dup2(pipe_fd[1], STDERR_FILENO);
-            env.exec<parallel_conf_t>(pconf, preproc, postproc);
+            env.exec<parallel_conf_t>(pconf); //, preproc, postproc, exports);
             std::cout << "execlp failed! " << strerror(errno) << std::endl;
             exit(1);
         }
