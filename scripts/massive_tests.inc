@@ -33,12 +33,8 @@ function info() {
     echo "$str"
 }
 
-function is_bash_func_declared() {
-    [ `type -t $1`"" == 'function' ]
-}
-
 function check_bash_func_declared() {
-    is_bash_func_declared  "$1" || fatal "$1 bash function is not defined!"
+    [ `type -t $1`"" == 'function' ] || fatal "$1 bash function is not defined!"
 }
 
 function zip_X1() {
@@ -164,7 +160,7 @@ function move_results() {
     rm -rf "$DIR"
     mkdir "$DIR"
     mv results.* "$DIR"
-    [ $(ls -1d input*.yaml 2>/dev/null | wc -l) == "0" ] || cp input*.yaml "$DIR"
+    cp input*.yaml "$DIR"
     mv output_initial.yaml "$DIR"/output.yaml
 }
 
@@ -186,4 +182,5 @@ function init_env()  {
     export LD_LIBRARY_PATH=$PWD/lib:$PWD/thirdparty/yaml-cpp.bin/lib:$PWD/thirdparty/argsparser.bin:$LD_LIBRARY_PATH
     [ -x ./massivetest ] || fatal "massivetest executable is required."
     [ -e ./params.inc ] || fatal "params.inc executable is required."
+    [ -e ./modeset.inc ] || fatal "modeset.inc executable is required."
 }

@@ -22,8 +22,9 @@ source ./massive_tests.inc
 init_env
 
 source ./params.inc
-[ -e modeset.inc ] && source ./modeset.inc
+source ./modeset.inc
 
+check_bash_func_declared set_specific_params
 
 MASSIVE_TESTS_WORKLOADS="$WORKLOADS"
 MASSIVE_TESTS_CONFS="$CONFS"
@@ -38,11 +39,7 @@ mkdir summary
 for mode in $MODES; do
     for submode in $SUBMODES; do
         CONF=conf.${mode}_${submode}
-        export MASSIVE_TESTS_TESTITEM_MODE=$mode
-        export MASSIVE_TESTS_TESTITEM_SUBMODE=$submode
-        if is_bash_func_declared set_specific_params; then 
-            set_specific_params "$mode" "$submode"
-        fi
+        set_specific_params "$mode" "$submode"
         massivetest-run
         move_results "$CONF"
         ./extract.sh "$CONF" "$TUPLE" "$MASSIVE_TESTS_KEYWORDS" "$MASSIVE_TESTS_SIZEKEYWORD" > "out.$CONF" && true
@@ -60,9 +57,6 @@ done
 ./make_table.sh "$TUPLE" || exit 1 && true
 
 touch references.txt
-cp -f stats.txt references.txt table.* test_items*yaml summary/ || exit 1 && true
-if [ $(ls -1d input_*.yaml 2>/dev/null | wc -l) != "0" ]; then
-    cp -f input_*.yaml summary/ || exit 1 && true
-fi
+cp -f stats.txt references.txt table.* test_items*yaml input_*.yaml summary/ || exit 1 && true
 
 
