@@ -182,6 +182,10 @@ struct process {
     }
 
     void kill() {
+        if (outfp != nullptr) {
+            fclose(outfp);
+            outfp = nullptr;
+        }
         if (!pid)
             return;
         ::kill(pid, SIGTERM);
@@ -189,6 +193,10 @@ struct process {
     }
 
     void wait() {
+        if (outfp != nullptr) {
+            fclose(outfp);
+            outfp = nullptr;
+        }
         if (!pid)
             return;
         int status;
