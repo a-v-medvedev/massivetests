@@ -145,7 +145,7 @@ struct process {
             close(pipe_fd[0]);
             dup2(pipe_fd[1], STDOUT_FILENO);
             dup2(pipe_fd[1], STDERR_FILENO);
-            env.exec<parallel_conf_t>(pconf); //, preproc, postproc, exports);
+            env.exec<parallel_conf_t>(pconf);
             std::cout << "execlp failed! " << strerror(errno) << std::endl;
             exit(1);
         }
@@ -182,21 +182,24 @@ struct process {
     }
 
     void kill() {
-        if (outfp != nullptr) {
-            fclose(outfp);
-            outfp = nullptr;
-        }
         if (!pid)
             return;
         ::kill(pid, SIGTERM);
         this->wait();
     }
-
-    void wait() {
+    
+    void cleanup() {
+        if (!pid)
+            return;
+        state = "FINISHED";
+        pid = 0;
         if (outfp != nullptr) {
             fclose(outfp);
             outfp = nullptr;
         }
+    }
+
+    void wait() {
         if (!pid)
             return;
         int status;
@@ -206,8 +209,7 @@ struct process {
         } else {
             retval = WEXITSTATUS(status);
         }
-        state = "FINISHED";
-        pid = 0;
+        cleanup();
     }
 
     bool wait_non_blocking() {
@@ -222,8 +224,7 @@ struct process {
         } else {
             retval = WEXITSTATUS(status);
         }
-        state = "FINISHED";
-        pid = 0;
+        cleanup();
         return true;
     }
 
