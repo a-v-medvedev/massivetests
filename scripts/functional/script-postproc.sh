@@ -32,7 +32,7 @@ for b in $BENCHS; do
     SUBMODES=""
     for f in out.${MODE}_*; do
         SUBMODE=$(echo $f | sed "s/out.${MODE}_//")
-        echo $SUBMODE | grep -q "_" && continue
+        #echo $SUBMODE | grep -q "_" && continue
         SUBMODES="$SUBMODES $SUBMODE"
         echo ${MODE}_${SUBMODE} >> sum.${MODE}/out.summary.$b
         echo "-----------" >> sum.${MODE}/out.summary.$b

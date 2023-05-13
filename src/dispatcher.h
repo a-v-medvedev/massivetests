@@ -45,13 +45,12 @@ struct dispatcher {
     using workload_conf_t = typename TRAITS::workload_conf_t;
     using parallel_conf_t = typename TRAITS::parallel_conf_t;
     std::vector<std::shared_ptr<process<parallel_conf_t>>> waiting_processes;
-    std::vector<std::shared_ptr<process<parallel_conf_t>>> processes;
+    std::vector<std::shared_ptr<process<parallel_conf_t>>> active_processes;
     std::map<std::tuple<int, workload_conf_t, parallel_conf_t>, 
              std::vector<std::shared_ptr<process<parallel_conf_t>>>> attempts;
     size_t nattempts;
     size_t nqueued;
-    bool all_in_holdover = false;
-    size_t nholdover = 0;
+    bool full_holdover = false;
     size_t ntimesinfullholdover = 0;
     uint64_t oldcs = 0;
     size_t finished = 0, queued = 0, done = 0, error = 0;
@@ -68,79 +67,93 @@ struct dispatcher {
         start_more_processes();
     }
 
+    void handle_holdover_processes() {
+		// Put the holdover process back in the waiting queue
+        auto proc = waiting_processes.front();
+		waiting_processes.erase(waiting_processes.begin());
+		waiting_processes.push_back(proc);
+
+		// Check if all the perocesses in waiting queue are just holdover processes
+		size_t nholdover = 0;
+		for (const auto &p : waiting_processes) {
+			if (p->env.holdover) {
+				nholdover++;
+			}
+		}
+
+		// If that is the case...
+		if (nholdover == waiting_processes.size()) {
+			if (active_processes.size() - finished == 0) {
+				ntimesinfullholdover++;
+			}
+			full_holdover = true;
+		} else {
+#ifdef DEBUG
+			if (full_holdover) {
+				std::cout << ">> HOLDOVER CLEARED: all in holdover: was " << ntimesinfullholdover << " times seen, now cleared, waiting_processes.size()=" << waiting_processes.size() << std::endl;
+			}
+#endif
+			full_holdover = false;
+			ntimesinfullholdover = 0;
+		}
+
+		// If the "All in holdover" state persists for long enough...
+		if (full_holdover && ntimesinfullholdover > 100) {
+#ifdef DEBUG
+		    std::cout << ">> HOLDOVER LIMIT: full holdover: " << ntimesinfullholdover << " times seen, waiting_processes.size()=" << waiting_processes.size() << std::endl;
+#endif
+			for (const auto &p : waiting_processes) {
+				p->env.holdover = false;
+				p->env.skip = true;
+				p->start();
+				active_processes.push_back(p);
+			}
+			std::cout << "DISPATCHER: all waiting process are in holdover state: now marked these " << waiting_processes.size() << " processes as skipped" << std::endl;
+			waiting_processes.erase(waiting_processes.begin(), waiting_processes.end());
+			std::cout << "DISPATCHER: waiting for their finished status..." << std::endl;
+			while (!check_if_all_finished()) { ; }
+			ntimesinfullholdover = 0;
+			std::cout << "DISPATCHER: all holdover-state processes marked finished." << std::endl;
+	    }
+    }
+
+    bool really_little_running_processes() { return active_processes.size() - finished < nqueued; }
+
+    bool rather_little_running_processes() { return active_processes.size() - finished < 2 * nqueued; }
+
     void start_more_processes() {
         static bool inside = false;
         if (inside)
             return;
         inside = true;
-        while (
-            (processes.size() - finished < nqueued) ||
-            ((finished || done) && (queued < 2) && (processes.size() - finished < 2 * nqueued))) {
+        while (really_little_running_processes() ||
+               (rather_little_running_processes() && (finished || done) && (queued < 2))) {
             if (waiting_processes.size() == 0)
                 break;
-            std::shared_ptr<process<typename TRAITS::parallel_conf_t>> proc = waiting_processes[0];
+            auto proc = waiting_processes.front();
             proc->create_environment();
             if (proc->env.holdover) {
-                waiting_processes.erase(waiting_processes.begin());
-                waiting_processes.push_back(proc);
-                nholdover = 0;
-                for (const auto &p : waiting_processes) {
-                    if (p->env.holdover) {
-                        nholdover++;
-                    }
-                }
-                if (nholdover == waiting_processes.size()) {
-                    if (processes.size() - finished == 0) {
-                        ntimesinfullholdover++;
-                    }
-                    all_in_holdover = true;
-                } else {
-#ifdef DEBUG        
-                    if (all_in_holdover) {            
-                        std::cout << ">> CLEARED: all in holover: was " << ntimesinfullholdover << " times seen, now cleared, waiting_processes.size()=" << waiting_processes.size() << std::endl;
-                    }
-#endif                    
-                    all_in_holdover = false;
-                    ntimesinfullholdover = 0;
-                }
-                if (all_in_holdover) {
-                    if (ntimesinfullholdover > 1000) {
-#ifdef DEBUG        
-                        std::cout << ">> LIMIT: all in holover: " << ntimesinfullholdover << " times seen, waiting_processes.size()=" << waiting_processes.size() << std::endl;
-#endif                        
-                        for (const auto &p : waiting_processes) {
-                            p->env.holdover = false;
-                            p->env.skip = true;
-                            p->start();
-                            processes.push_back(p);
-                        }
-                        std::cout << "DISPATCHER: all waiting process are in holdover state: now marked " << waiting_processes.size() << " processes as skipped" << std::endl;                     
-                        waiting_processes.erase(waiting_processes.begin(), waiting_processes.end());
-                        std::cout << "DISPATCHER: now waiting for finished status..." << std::endl;
-                        while (!check_if_all_finished()) { ; }
-                        all_in_holdover = 0; 
-                        ntimesinfullholdover = 0;
-                        std::cout << "DISPATCHER: all left holdover-state processes marked finished." << std::endl;
-                        break;
-                   }
-                   break;
-                }                 
-                continue;
-            }
+				handle_holdover_processes();
+                // If we have only holdover processes in the waiting queue, 
+                // we can only wait a bit for prerequisites to appear
+				if (full_holdover) {
+					usleep(10000);
+					break;
+				}
+				continue;
+			}
 #if DEBUG  // FIXME consider making this output a command-line switchable option
             std::cout << ">> dispatcher: start: {" << TRAITS::parallel_conf_to_string(proc->pconf) << "} "
-                      << p->env.to_string() << std::endl; 
+                      << proc->env.to_string() << std::endl; 
 #endif
             proc->start();
-            processes.push_back(proc);
+            active_processes.push_back(proc);
             waiting_processes.erase(waiting_processes.begin());
             if (check_if_all_finished())
                 break;
             if (queued < 2)
                 usleep(1000);
         }
-        if (all_in_holdover)
-            usleep(10000);
         inside = false;
     }
 
@@ -167,7 +180,7 @@ struct dispatcher {
         start_more_processes();
         size_t cnt = 0;
         std::map<std::string, size_t> proc_states;
-        for (auto &proc : processes) {
+        for (auto &proc : active_processes) {
             bool res = proc->update_state();
             proc_states[proc->state]++;
             if (res)
@@ -184,7 +197,7 @@ struct dispatcher {
         done = proc_states["DONE"];
         error = proc_states["E"];
         assert(finished == cnt);
-        bool all_is_done = ((cnt == processes.size()) && (waiting_processes.size() == 0));
+        bool all_is_done = ((cnt == active_processes.size()) && (waiting_processes.size() == 0));
         if (some_new_finished_processes || all_is_done) {
             for (auto &it : attempts) {
                 auto &procs = it.second;
@@ -208,7 +221,7 @@ struct dispatcher {
                           << TRAITS::parallel_conf_to_string(pconf)
                           << "} finished, procssing output" << std::endl;
 #endif
-                procs[0]->om->make(procs);
+                procs.front()->om->make(procs);
             }
         }
         return all_is_done;

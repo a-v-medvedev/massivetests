@@ -180,9 +180,12 @@ struct test_item_t {
 		return default_timeout;
     }
 
-	bool get_prerequisites(std::vector<std::pair<std::string, std::string>> &_prereq) {
-		_prereq  = prereq;
+    bool get_prerequisites_flag() const {
 	    return prereq.size() != 0;	
+	}
+
+	const std::vector<std::pair<std::string, std::string>> &get_prerequisites() const {
+		return prereq;
 	}
 
     unsigned get_skip_flag(const std::string &param, int n, int ppn = 1) {
@@ -291,6 +294,7 @@ struct input_maker : public input_maker_base<parallel_conf_t> {
     test_item_t testitem;
     test_scope<traits> &scope;
     input_maker(test_scope<traits> &_scope);
+    bool check_prerequisites(const parallel_conf_t &pconf, execution_environment &env);
     virtual bool make(const parallel_conf_t &pconf, execution_environment &env);
 	void do_substs(const parallel_conf_t &pconf, std::string &filename);
 	bool file_exists(const parallel_conf_t &pconf, const std::string &filename_);

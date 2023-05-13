@@ -134,33 +134,48 @@ bool input_maker<parallel_conf_t>::exec_shell_command(const parallel_conf_t &pco
 }
 
 template <typename parallel_conf_t>
+bool input_maker<parallel_conf_t>::check_prerequisites(const parallel_conf_t &pconf, execution_environment &env) {
+    const auto &prereq = testitem.get_prerequisites();
+    bool notexist = false;
+    std::string file;
+	for (const auto &elem : prereq) {
+		file = elem.first;
+		if (!file_exists(pconf, file)) {
+#ifdef DEBUG                
+			std::cout << ">> functest: prerequisite testing: object doesn't exist: " << file << std::endl;
+#endif                
+			notexist = true;
+			break;
+		}
+	}
+	if (notexist) {
+		env.holdover = true;
+		env.holdover_reason = "Prerequisite object not found: " + file;
+		return false;
+	}
+	return true;
+}
+
+
+template <typename parallel_conf_t>
 bool input_maker<parallel_conf_t>::make(const parallel_conf_t &pconf, execution_environment &env) {
 	assert(scope.workparts.size() == 1);
     const auto &workload = scope.workload_conf.first;
 	const auto &conf = scope.workload_conf.second;
-    if (testitem.get_skip_flag(workload, pconf.first, pconf.second)) {
+
+    // If the skip flag is set, just return
+    if (testitem.get_skip_flag(workload, pconf.first, pconf.second) || env.skip) {
         env.skip = true;
         return false;
     }
-    std::vector<std::pair<std::string, std::string>> prereq;
-    bool notexist = false;
-    std::string from;
-    if (testitem.get_prerequisites(prereq)) {
-        for (const auto &elem : prereq) {
-            from = elem.first;
-            if (!file_exists(pconf, from)) {
-#ifdef DEBUG                
-                std::cout << ">> functest: prerequisite testing: object doesn't exist: " << from << std::endl;
-#endif                
-                notexist = true;
-                break;
-            }
-        }
-        if (notexist) {
-            env.holdover = true;
-            env.holdover_reason = "Prerequisite object not found: " + from;
-        }
-    }
+
+    // If prerequisites do not exist, set the holdover state and skip all further steps
+	if (testitem.get_prerequisites_flag()) {
+		if (!check_prerequisites(pconf, env))
+			return false;
+	}
+
+    // Choose the expected psubmit options file name
     if (helpers::file_exists("./psubmit.opt") || conf == "X") {
         env.psubmit_options = "./psubmit.opt";
     } else { 
@@ -168,6 +183,7 @@ bool input_maker<parallel_conf_t>::make(const parallel_conf_t &pconf, execution_
     }
     env.input_yaml = "./input_" + workload + ".yaml";
 
+    // Create the set of environment variables for scripts that we are going to execute
     auto &exports = env.exports;
 	for (const auto v : {"WLD", "CONF", "WPRT", "WPRT_PARAM", "NP", "PPN"}) {
 		std::string s = std::string("MASSIVE_TESTS_TESTITEM_") + v + "=" + "%" + v + "%";
@@ -175,6 +191,7 @@ bool input_maker<parallel_conf_t>::make(const parallel_conf_t &pconf, execution_
 		exports.push_back(s);
     } 
 
+	// To form a command line we either execute the ./input_maker_cmdline.sh script or fill in some hard-coded values
     bool cmdline_requires_additional_filling = true;
     const std::string input_maker_script = "./input_maker_cmdline.sh";
     if (helpers::file_exists(input_maker_script) && helpers::file_is_exec(input_maker_script)) {
@@ -192,7 +209,7 @@ bool input_maker<parallel_conf_t>::make(const parallel_conf_t &pconf, execution_
 			return false;
 		}
     } else {
-        //--- cmdline
+        //--- cmdline hardcoded
         env.cmdline_args = load_key + " " + env.input_yaml;
         env.cmdline_args += std::string(" ") + result_key + std::string(" ") + " result.%PSUBMIT_JOBID%.yaml";
         if (conf_key != "") {
@@ -206,19 +223,19 @@ bool input_maker<parallel_conf_t>::make(const parallel_conf_t &pconf, execution_
         if ((aux_opts = getenv("MASSIVETEST_AUX_ARGS"))) {
             env.cmdline_args += " " + std::string(aux_opts);
         }
-        //--- /cmdline
+        //--- /cmdline hardcoded
     }
 
+	// Make substitutions in preproc and postproc script names and args if they exist
     auto &pr = input_maker_base<parallel_conf_t>::preproc;
     pr = testitem.preproc;
 	do_substs(pconf, pr);
+	env.preproc = pr;
 
     auto &po = input_maker_base<parallel_conf_t>::postproc;
     po = testitem.postproc;
 	do_substs(pconf, po);
-
 	env.postproc = po;
-	env.preproc = pr;
 	
     return cmdline_requires_additional_filling;
 }

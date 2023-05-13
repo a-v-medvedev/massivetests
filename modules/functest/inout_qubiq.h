@@ -28,14 +28,6 @@ struct input_maker_qubiq : public input_maker<parallel_conf_t> {
         if (!input_maker<parallel_conf_t>::make(pconf, env)) {
             return false;
         }
-        /*
-        auto &workload = scope.workload_conf.first;
-        
-        if (testitem.get_skip_flag(workload, pconf.first, pconf.second)) {
-            env.skip = true;
-            return;
-        }
-        */
         auto grid = scope.workparts[0].first;
         assert(grid.size() != 0);
         env.cmdline_args += std::string(" -grid ") + grid;
