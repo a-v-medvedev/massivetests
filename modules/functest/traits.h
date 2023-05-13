@@ -95,7 +95,7 @@ struct traits {
         if (c.first == "" && c.second == "")
             return;
         out << YAML::Key << YAML::Flow << "Workload" << YAML::Value << c.first;
-        out << YAML::Key << YAML::Flow << "Mode" << YAML::Value << c.second;
+        out << YAML::Key << YAML::Flow << "Conf" << YAML::Value << c.second;
     }
     static void parallel_conf_to_yaml(const parallel_conf_t &c, YAML::Emitter &out) {
         out << YAML::Key << YAML::Flow << "n" << YAML::Value << c.first;
