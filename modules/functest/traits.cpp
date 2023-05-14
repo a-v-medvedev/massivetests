@@ -127,6 +127,11 @@ std::shared_ptr<result_t> traits::make_result(const workload_conf_t &wc,
 }
 
 std::string traits::application;
+#ifdef DEBUG
+bool traits::debug = true;
+#else
+bool traits::debug = false;
+#endif
 
 } // namespace functest
 

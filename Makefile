@@ -2,6 +2,8 @@ THIRDPARTY ?= thirdparty
 MODULE ?= functest
 STATIC ?= FALSE
 
+#override CXXFLAGS += -DDEBUG
+
 override CXXFLAGS += -O2 -std=c++11 -Wall -Wextra -pedantic -I$(THIRDPARTY)/argsparser.bin -I$(THIRDPARTY)/yaml-cpp.bin/include -I. -Isrc -D__USE_BSD 
 override CXXFLAGS += -DMODULE=$(MODULE) -DMODULESTR=\"$(MODULE)\"
 ifeq ($(STATIC),TRUE)

@@ -38,6 +38,7 @@ struct traits {
     using workpart_t = std::pair<std::string, int>;
     using value_t = std::string;
     static std::string application;
+    static bool debug;
     std::vector<workload_conf_t> parse_and_make_workload_confs(const args_parser &parser,
                                                                const std::string &name);
     std::vector<target_parameter_t> parse_and_make_target_parameters(const args_parser &parser,
@@ -59,12 +60,14 @@ struct traits {
     std::shared_ptr<input_maker_base<parallel_conf_t>> make_input_maker(test_scope<traits> &scope);
     std::shared_ptr<output_maker_base<parallel_conf_t>> make_output_maker(test_scope<traits> &scope,
                                                          const std::string &outfile);
-    std::shared_ptr<result_t> make_result(const workload_conf_t &c, 
-                                          const parallel_conf_t &pc, 
-                                          const target_parameter_t &tp,
-                                          const workpart_t &ws, 
-                                          value_t status,
-                                          const std::string &comment = "");
+    static std::shared_ptr<result_t> make_result(const workload_conf_t &c, 
+												 const parallel_conf_t &pc, 
+												 const target_parameter_t &tp,
+												 const workpart_t &ws, 
+												 value_t status,
+												 const std::string &comment = "");
+//	    return std::make_shared<result<traits>>(wc, pc, tp, ws, value, comment);
+//    }
     static std::string workload_conf_to_string(const workload_conf_t &c) {
         if (c.first == "" && c.second == "")
             return "";

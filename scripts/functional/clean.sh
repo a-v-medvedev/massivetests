@@ -17,4 +17,5 @@
 #
 #
 
-rm -rf conf.* out.conf.* sum.conf.*
+#rm -rf conf.* out.conf.* sum.conf.*
+rm -rf table.* sum.conf.* summary/ out.conf.* conf.*

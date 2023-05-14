@@ -101,8 +101,15 @@ template <typename parallel_conf_t>
 bool input_maker<parallel_conf_t>::file_exists(const parallel_conf_t &pconf, const std::string &filename_) {
     std::string filename = filename_;
 	do_substs(pconf, filename);
+	if (functest::traits::debug) {
+		std::cout << ">> functest: prerequisite testing: trying to stat a file: " << filename << std::endl;
+	}
 	struct stat r;   
-  	return (stat(filename.c_str(), &r) == 0);
+  	int retval = stat(filename.c_str(), &r);
+    if (retval != 0 && functest::traits::debug) {
+        perror(">> functest: stat");
+    }
+  	return (retval == 0);
 }
 
 template <typename parallel_conf_t>
@@ -141,9 +148,9 @@ bool input_maker<parallel_conf_t>::check_prerequisites(const parallel_conf_t &pc
 	for (const auto &elem : prereq) {
 		file = elem.first;
 		if (!file_exists(pconf, file)) {
-#ifdef DEBUG                
-			std::cout << ">> functest: prerequisite testing: object doesn't exist: " << file << std::endl;
-#endif                
+            if (functest::traits::debug) {
+    			std::cout << ">> functest: prerequisite testing: object doesn't exist: " << file << std::endl;
+            }
 			notexist = true;
 			break;
 		}
@@ -153,6 +160,8 @@ bool input_maker<parallel_conf_t>::check_prerequisites(const parallel_conf_t &pc
 		env.holdover_reason = "Prerequisite object not found: " + file;
 		return false;
 	}
+	env.holdover = false;
+    env.holdover_reason = "";
 	return true;
 }
 
@@ -285,7 +294,6 @@ status_t check_if_failed(const std::string &s, const std::string &jid) {
 
 template <typename parallel_conf_t>
 void output_maker<parallel_conf_t>::make(std::vector<std::shared_ptr<process<parallel_conf_t>>> &attempts) {
-    functest::traits traits;
     parallel_conf_t pconf;
 	const auto wconf = scope.workload_conf;
 	const auto workpart = scope.workparts[0];
@@ -348,16 +356,16 @@ void output_maker<parallel_conf_t>::make(std::vector<std::shared_ptr<process<par
                       << std::endl;
             continue;
         }
-#ifdef DEBUG // FIXME make it an external cmdline param
-        std::cout << ">> functest: input: reading " << infile << std::endl;
-#endif
+        if (functest::traits::debug) {
+            std::cout << ">> functest: input: reading " << infile << std::endl;
+        }
         try {
             auto stream = YAML::Load(in);
             auto tps = testitem.update_target_parameters(scope.target_parameters);
             for (auto &sp : tps) {
                 std::string &section = sp.first;
                 std::string &parameter = sp.second;
-                auto str_sp = traits.target_parameter_to_string(sp);
+                auto str_sp = functest::traits::target_parameter_to_string(sp);
                 auto &vals = values[str_sp];
                 if (!stream[section])
                     continue;
@@ -414,14 +422,14 @@ void output_maker<parallel_conf_t>::make(std::vector<std::shared_ptr<process<par
         for (auto &it : values) {
             std::string param = it.first;
             auto &vals = it.second;
-#ifdef DEBUG  // FIXME make it an external cmdline param
-            std::cout << ">> functest: output: parameter=" << param << std::endl;
-#endif
+            if (functest::traits::debug) {
+                std::cout << ">> functest: output: parameter=" << param << std::endl;
+            }
             auto &v = vals[workpart];
             if (v.size() == 0) {
-#ifdef DEBUG // FIXME make it an external cmdline param
-                std::cout << ">> functest: output: nothing found for parameter: " << param << std::endl;
-#endif
+                if (functest::traits::debug) {
+                    std::cout << ">> functest: output: nothing found for parameter: " << param << std::endl;
+                }
                 comment = std::string("No data for par=") + param;
                 status = status_t::N;
                 break;
@@ -432,9 +440,9 @@ void output_maker<parallel_conf_t>::make(std::vector<std::shared_ptr<process<par
                 sort(v.begin(), v.end());
                 auto diff = v.front().first - v.back().first;
                 if (diff != 0) {
-#ifdef DEBUG  // FIXME make it an external cmdline param
-                    std::cout << ">> functest: v.front() != v.back(). ATTEMPTS COMPARISON FAILED!" << std::endl;
-#endif
+                    if (functest::traits::debug) {
+                        std::cout << ">> functest: v.front() != v.back(). ATTEMPTS COMPARISON FAILED!" << std::endl;
+                    }
                     comment = std::string("Attempts comparison failed par=") + param + 
                               std::string(" diff=") + helpers::flt2str(fabs(diff)) +
                               std::string(" dir=") + v.front().second +
@@ -447,9 +455,9 @@ void output_maker<parallel_conf_t>::make(std::vector<std::shared_ptr<process<par
             double diff = fabs(result_val - testitem.base[param]);
             double tolerance = testitem.get_tolerance(param, pconf.first, pconf.second);
             if (diff > tolerance) {
-#ifdef DEBUG  // FIXME make it an external cmdline param
-                std::cout << ">> functest: diff > " << tolerance << ". GOLD VALUE COMPARISON FAILED!" << std::endl;
-#endif
+                if (functest::traits::debug) {
+                    std::cout << ">> functest: diff > " << tolerance << ". GOLD VALUE COMPARISON FAILED!" << std::endl;
+                }
                 comment = std::string("Gold value comparison failed par=") + param + 
                           std::string(" diff=") + helpers::flt2str(diff) + 
                           std::string(" tol=") + helpers::flt2str(tolerance) + 
@@ -461,7 +469,7 @@ void output_maker<parallel_conf_t>::make(std::vector<std::shared_ptr<process<par
             }
         }
     }
-    auto r = traits.make_result(wconf, pconf, {"", ""}, workpart, status_to_string(status), comment);
+    auto r = functest::traits::make_result(wconf, pconf, {"", ""}, workpart, status_to_string(status), comment);
     r->to_yaml(out);
     nresults++;
     std::cout << "OUTPUT: functest: {" << wconf.first << "," << wconf.second << "}"

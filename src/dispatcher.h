@@ -88,20 +88,19 @@ struct dispatcher {
 			}
 			full_holdover = true;
 		} else {
-#ifdef DEBUG
-			if (full_holdover) {
+
+			if (TRAITS::debug && full_holdover) {
 				std::cout << ">> HOLDOVER CLEARED: all in holdover: was " << ntimesinfullholdover << " times seen, now cleared, waiting_processes.size()=" << waiting_processes.size() << std::endl;
 			}
-#endif
 			full_holdover = false;
 			ntimesinfullholdover = 0;
 		}
 
 		// If the "All in holdover" state persists for long enough...
 		if (full_holdover && ntimesinfullholdover > 100) {
-#ifdef DEBUG
-		    std::cout << ">> HOLDOVER LIMIT: full holdover: " << ntimesinfullholdover << " times seen, waiting_processes.size()=" << waiting_processes.size() << std::endl;
-#endif
+            if (TRAITS::debug) {
+    		    std::cout << ">> HOLDOVER LIMIT: full holdover: " << ntimesinfullholdover << " times seen, waiting_processes.size()=" << waiting_processes.size() << std::endl;
+            }
 			for (const auto &p : waiting_processes) {
 				p->env.holdover = false;
 				p->env.skip = true;
@@ -142,10 +141,10 @@ struct dispatcher {
 				}
 				continue;
 			}
-#if DEBUG  // FIXME consider making this output a command-line switchable option
-            std::cout << ">> dispatcher: start: {" << TRAITS::parallel_conf_to_string(proc->pconf) << "} "
-                      << proc->env.to_string() << std::endl; 
-#endif
+            if (TRAITS::debug) {            
+                std::cout << ">> dispatcher: start: {" << TRAITS::parallel_conf_to_string(proc->pconf) << "} "
+                          << proc->env.to_string() << std::endl; 
+            }
             proc->start();
             active_processes.push_back(proc);
             waiting_processes.erase(waiting_processes.begin());
@@ -212,15 +211,15 @@ struct dispatcher {
                 }
                 if (!all_finished)
                     continue;
-#ifdef DEBUG // FIXME consider making this output a command-line switchable option
-                auto &conf = it.first;
-                auto &wconf = std::get<1>(conf);
-                auto &pconf = std::get<2>(conf);
-                std::cout << ">> dispatcher: " << nattempts << " attempts for: {"
-                          << wconf.first << "," << wconf.second << "} in parallel conf: {"
-                          << TRAITS::parallel_conf_to_string(pconf)
-                          << "} finished, procssing output" << std::endl;
-#endif
+                if (TRAITS::debug) {
+                    auto &conf = it.first;
+                    auto &wconf = std::get<1>(conf);
+                    auto &pconf = std::get<2>(conf);
+                    std::cout << ">> dispatcher: " << nattempts << " attempts for: {"
+                              << wconf.first << "," << wconf.second << "} in parallel conf: {"
+                              << TRAITS::parallel_conf_to_string(pconf)
+                              << "} finished, procssing output" << std::endl;
+                }
                 procs.front()->om->make(procs);
             }
         }

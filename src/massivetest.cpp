@@ -42,7 +42,6 @@ int test_scope<MODULE::traits>::counter = 0;
 #include "helpers.h"
 #include "results.h"
 
-
 template <typename TRAITS>
 void start(const std::vector<std::shared_ptr<test_scope<TRAITS>>> &scopes,
            const std::string &outfile, int nqueued, int repeats) {
@@ -84,6 +83,9 @@ void parse_and_start(const args_parser &parser, int nqueued, int repeats) {
 }
 
 int main(int argc, char **argv) {
+    if (getenv("MASSIVE_TESTS_DEBUG") != nullptr) {
+        MODULE::traits::debug = true;
+    }
     args_parser parser(argc, argv);
     parser.add_vector<std::string>("workloads", "")
         .set_mode(args_parser::option::APPLY_DEFAULTS_ONLY_WHEN_MISSING);
