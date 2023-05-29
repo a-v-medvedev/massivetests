@@ -69,17 +69,10 @@ void parse_and_start(const args_parser &parser, int nqueued, int repeats) {
     auto target_parameters = traits.parse_and_make_target_parameters(parser, "parameters");
     auto parallel_confs = traits.parse_and_make_parallel_confs(parser, "scale");
     auto workparts = traits.parse_and_make_workparts(parser, "workparts");
-
     helpers::trunc_file("output_initial.yaml");
-    if (workload_confs.size() == 0) {
-        typename TRAITS::workload_conf_t wc { "xxx", "purempi" };
-        start<TRAITS>({traits.make_scope(wc, parallel_confs, target_parameters, workparts)},
-                      "output_initial.yaml", nqueued, repeats);
-    } else {
-        start<TRAITS>(traits.make_scopes(workload_confs, parallel_confs, target_parameters, 
-                       workparts),
-                      "output_initial.yaml", nqueued, repeats);
-    }
+    start<TRAITS>(traits.make_scopes(workload_confs, parallel_confs, target_parameters, 
+                   workparts),
+                  "output_initial.yaml", nqueued, repeats);
 }
 
 int main(int argc, char **argv) {
@@ -103,17 +96,10 @@ int main(int argc, char **argv) {
     int nqueued = parser.get<int>("nqueued");
     int repeats = parser.get<int>("repeats");
     auto driver = parser.get<std::string>("driver");
-    if (driver.find("/") != std::string::npos) {
-        auto da_pair = helpers::str_split(driver, '/');
-        assert(da_pair.size() == 2);
-        driver = da_pair[0];
-        MODULE::traits::application = da_pair[1];
-    }
-    if (driver == MODULESTR) {
-        parse_and_start<MODULE::traits>(parser, nqueued, repeats);
-    } else {
+    if (driver != MODULESTR) {
         std::cout << "Unknown driver: " << driver << std::endl;
         return 1;
     }
+    parse_and_start<MODULE::traits>(parser, nqueued, repeats);
     return 0;
 }

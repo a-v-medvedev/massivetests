@@ -173,7 +173,7 @@ function massivetest-run() {
     local WORKPARTS=$(zip "$MASSIVE_TESTS_WORKPARTS" "$MASSIVE_TESTS_REPEATS" ",")
     local WORKLOADS=$(comb "$MASSIVE_TESTS_WORKLOADS" "$MASSIVE_TESTS_CONFS" ",")
     local PARAMS=$(comb "$MASSIVE_TESTS_SECTIONS" "$MASSIVE_TESTS_PARAMETERS" ",")
-    ./massivetest --driver="$MASSIVE_TESTS_DRIVER/$MASSIVE_TESTS_APPLICATION" --scale="${NPPNS}" --nqueued="$MASSIVE_TESTS_NQUEUED" --workparts="$WORKPARTS" --repeats="$MASSIVE_TESTS_EXEC_REPEATS" --workloads="$WORKLOADS" --parameters="$PARAMS"
+    ./massivetest --driver="$MASSIVE_TESTS_DRIVER" --scale="${NPPNS}" --nqueued="$MASSIVE_TESTS_NQUEUED" --workparts="$WORKPARTS" --repeats="$MASSIVE_TESTS_EXEC_REPEATS" --workloads="$WORKLOADS" --parameters="$PARAMS"
 }
 
 function init_env()  {

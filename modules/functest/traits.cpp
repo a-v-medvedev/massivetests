@@ -32,10 +32,6 @@
 #include "scope.h"
 #include "modules/functest/traits.h"
 #include "modules/functest/inout.h"
-#include "modules/functest/inout_teststub.h"
-#include "modules/functest/inout_xamg.h"
-#include "modules/functest/inout_qubiq.h"
-#include "modules/functest/inout_fs1D.h"
 #include "results.h"
 
 namespace functest {
@@ -87,34 +83,12 @@ traits::make_scopes(const std::vector<traits::workload_conf_t> &workload_confs,
 
 std::shared_ptr<input_maker_base<traits::parallel_conf_t>> 
 traits::make_input_maker(test_scope<traits> &scope) {
-    if (application == "teststub") {
-        return std::make_shared<input_maker_teststub<traits::parallel_conf_t>>(scope);
-    } else if (application == "xamg") {
-        return std::make_shared<input_maker_xamg<traits::parallel_conf_t>>(scope);
-    } else if (application == "qubiq") {
-        return std::make_shared<input_maker_qubiq<traits::parallel_conf_t>>(scope);
-    } else if (application == "fs1D") {
-        return std::make_shared<input_maker_fs1D<traits::parallel_conf_t>>(scope);
-    } else {
-        throw std::runtime_error("input_maker: Unknown application");
-        return nullptr;
-    }
+    return std::make_shared<input_maker<traits::parallel_conf_t>>(scope);
 }
 
 std::shared_ptr<output_maker_base<traits::parallel_conf_t>> 
 traits::make_output_maker(test_scope<traits> &scope, const std::string &outfile) {
-    if (application == "teststub") {
-        return std::make_shared<output_maker_teststub<traits::parallel_conf_t>>(scope, outfile);
-    } else if (application == "xamg") {
-        return std::make_shared<output_maker_xamg<traits::parallel_conf_t>>(scope, outfile);
-    } else if (application == "qubiq") {
-        return std::make_shared<output_maker_qubiq<traits::parallel_conf_t>>(scope, outfile);
-    } else if (application == "fs1D") {
-        return std::make_shared<output_maker_fs1D<traits::parallel_conf_t>>(scope, outfile);
-    } else {
-        throw std::runtime_error("output_maker: Unknown application");
-        return nullptr;
-    }
+    return std::make_shared<output_maker<traits::parallel_conf_t>>(scope, outfile);
 }
 
 std::shared_ptr<result_t> traits::make_result(const workload_conf_t &wc, 
