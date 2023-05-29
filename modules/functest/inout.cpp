@@ -33,10 +33,6 @@
 
 #include "modules/functest/traits.h"
 #include "modules/functest/inout.h"
-#include "modules/functest/inout_teststub.h"
-#include "modules/functest/inout_xamg.h"
-#include "modules/functest/inout_qubiq.h"
-#include "modules/functest/inout_fs1D.h"
 
 #include "helpers.h"
 #include "results.h"

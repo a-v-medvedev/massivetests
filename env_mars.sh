@@ -51,12 +51,6 @@ function env_init {
     CGNS)
         # put here any specific env. setting before CGNS build
 	;;
-    qubiq-lib)
-        # put here any specific env. setting before qubiq-lib build
-    ;;
-    qubiq-solver)
-        # put here any specific env. setting before qubiq-solver build
-    ;;
     esac
     return 0
 }

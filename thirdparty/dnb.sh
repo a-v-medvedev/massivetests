@@ -47,8 +47,8 @@ function dnb_mpi-benchmarks() {
 		ln -s "$INSTALL_DIR"/argsparser.bin .
 		ln -s "$INSTALL_DIR"/yaml-cpp.bin .
         mkdir -p lib
-		#cp "$INSTALL_DIR"/argsparser.bin/*.so "$INSTALL_DIR"/yaml-cpp.bin/lib/*.so lib/
-		cp "$INSTALL_DIR"/argsparser.bin/*.a "$INSTALL_DIR"/yaml-cpp.bin/lib/*.a lib/
+		cp "$INSTALL_DIR"/argsparser.bin/*.so "$INSTALL_DIR"/yaml-cpp.bin/lib/*.so lib/
+		#cp "$INSTALL_DIR"/argsparser.bin/*.a "$INSTALL_DIR"/yaml-cpp.bin/lib/*.a lib/
 		cd "$INSTALL_DIR"/"$pkg"-"$V".src/src_cpp
 		export CXXFLAGS="-IASYNC/thirdparty/argsparser.bin -IASYNC/thirdparty/yaml-cpp.bin/include "
 		make TARGET=ASYNC CXX=$MPICXX clean

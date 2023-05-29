@@ -88,7 +88,6 @@ struct dispatcher {
 			}
 			full_holdover = true;
 		} else {
-
 			if (TRAITS::debug && full_holdover) {
 				std::cout << ">> HOLDOVER CLEARED: all in holdover: was " << ntimesinfullholdover << " times seen, now cleared, waiting_processes.size()=" << waiting_processes.size() << std::endl;
 			}
