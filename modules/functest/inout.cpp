@@ -52,8 +52,6 @@
 
 namespace functest {
 
-enum status_t { P=0, F=1, N=2, S=3, T=4, A=5, C=6, E=7 };
-
 static const std::string status_to_string(status_t st) {
     switch (st) {
         case status_t::P: return "P";
@@ -196,7 +194,8 @@ bool input_maker<parallel_conf_t>::make(const parallel_conf_t &pconf, execution_
 		exports.push_back(s);
     } 
 
-	// To form a command line we either execute the ./input_maker_cmdline.sh script or fill in some hard-coded values
+	// To form a command line we either execute the ./input_maker_cmdline.sh script or fill in some hard-coded values 
+    // (hard coded values are deprecated)
     bool cmdline_requires_additional_filling = true;
     const std::string input_maker_script = "./input_maker_cmdline.sh";
     if (helpers::file_exists(input_maker_script) && helpers::file_is_exec(input_maker_script)) {
@@ -293,12 +292,14 @@ void output_maker<parallel_conf_t>::make(std::vector<std::shared_ptr<process<par
     parallel_conf_t pconf;
 	const auto wconf = scope.workload_conf;
 	const auto workpart = scope.workparts[0];
-    using val_t = double;
-    using vals_t = std::map<decltype(workpart), std::vector<std::pair<val_t, std::string>>>;
+    using vals_t = std::map<decltype(workpart), std::vector<std::shared_ptr<comparator_t>>>;
     std::map<std::string, vals_t> values;
     status_t status = status_t::P;
     std::string comment;
+
     for (auto &proc : attempts) {
+        
+        // Job sumbitting failure case -- immediate stop
         int j = proc->jobid;
         if (j == -1 && !proc->skipped) {
             std::cout << "OUTPUT: FATAL: failure in submitting job via psubmit. Output:\n-----" << std::endl;
@@ -306,6 +307,8 @@ void output_maker<parallel_conf_t>::make(std::vector<std::shared_ptr<process<par
             assert(0 && "psubmit starting problem");
         }
         pconf = proc->pconf;
+
+        // Skipped item case
         if (proc->skipped) {
             if (proc->env.holdover_reason != "") {
                 comment = proc->env.holdover_reason;
@@ -316,6 +319,8 @@ void output_maker<parallel_conf_t>::make(std::vector<std::shared_ptr<process<par
             break;
         }
         std::string indir = std::string("results.") + std::to_string(j);
+
+        // Application return value check
         if (proc->retval) {
             comment = std::string("Non-zero return code: ") + std::to_string(proc->retval);
             comment += std::string(" dir=") + indir;
@@ -333,6 +338,8 @@ void output_maker<parallel_conf_t>::make(std::vector<std::shared_ptr<process<par
             }
             break;
         }
+
+        // TACE failure cases (Timeout, Assert, Crash, Exception) check
         std::string infile = indir + "/result." + std::to_string(j) + ".yaml";
         auto st = check_if_failed(indir, std::to_string(j));
         if (st != status_t::P) {
@@ -340,10 +347,11 @@ void output_maker<parallel_conf_t>::make(std::vector<std::shared_ptr<process<par
             status = st;
             break;
         }
+
+        // Application result YAML -- check if it exists
         std::ifstream in;
         if (!helpers::try_to_open_file<NATTEMPTS, SLEEPTIME>(in, infile)) {
 #if MISSING_FILES_FATAL            
-            // NOTE: commented out this return: let us handle missing input files as a non-fatal case
             std::cout << "OUTPUT: functest: stop processing: can't open input file: " << infile
                       << std::endl; 
             return;
@@ -355,58 +363,39 @@ void output_maker<parallel_conf_t>::make(std::vector<std::shared_ptr<process<par
         if (functest::traits::debug) {
             std::cout << ">> functest: input: reading " << infile << std::endl;
         }
+
+        // Read all the data from application result YAML
         try {
             auto stream = YAML::Load(in);
             auto tps = testitem.update_target_parameters(scope.target_parameters);
+
+            // For every expected section/parameter pair create a specific comparator
             for (auto &sp : tps) {
                 std::string &section = sp.first;
                 std::string &parameter = sp.second;
-                auto str_sp = functest::traits::target_parameter_to_string(sp);
-                auto &vals = values[str_sp];
+                auto parameter_code = functest::traits::target_parameter_to_string(sp);
+                auto &vals = values[parameter_code];
                 if (!stream[section])
                     continue;
-                const auto &sec = stream[section].as<YAML::Node>();
-                if (parameter.find("[") != std::string::npos && 
-                    parameter.find("]") != std::string::npos) {
-                    auto pv = helpers::str_split(parameter, '[');
-                    assert(pv.size() == 2);
-                    auto idxv = helpers::str_split(pv[1], ']');
-                    assert(idxv.size() == 1);
-                    auto p = pv[0];
-                    auto idx = idxv[0];
-                    size_t i = std::stol(idx);
-                    if (!sec[p])
-                        continue;
-                    const auto &pn = sec[p].as<YAML::Node>();
-                    size_t n = 0;
-                    for (YAML::const_iterator it = pn.begin(); it != pn.end(); ++it) {
-                        if (i == n++) {
-                            std::pair<val_t, std::string> item(it->as<val_t>(), indir); 
-                            vals[workpart].push_back(item);
-                            break;
-                        }
-                    }
-                } else {
-                    if (!sec[parameter])
-                        continue;
-                    const auto &p = sec[parameter].as<YAML::Node>();
-                    std::pair<val_t, std::string> item(p.as<val_t>(), indir);
-                    vals[workpart].push_back(item);
-                }
+                auto comparator = testitem.get_comparator(parameter_code, pconf.first, pconf.second, indir);
+                if (comparator->acquire_result_data_piece(stream, section, parameter))
+                    vals[workpart].push_back(comparator);
             }
         }
         catch (std::runtime_error &ex) {
             std::cout << "OUTPUT: parse error on YAML file: " << infile << std::endl;
             values.clear();
-            comment = std::string("dir=") + indir;
+            comment = std::string("dir=") + indir + "; parse error on YAML file: " + infile;
             break;
         }
     }
-    // NOTE: commented out this assert: lets handle missing input files as non-fatal case
     // FIXME consider this test a command-line switchable option
-    // assert(values.size() == attempts.size());
+#if MISSING_FILES_FATAL            
+    assert(values.size() == attempts.size());
+#endif
     attempts.resize(0);
-    int nresults = 0;
+
+    // Check if no actual data for any section/parameter pair is acquired
     if (status == status_t::P && values.size() == 0) {
         if (comment.size())
             comment = "No data found " + comment;
@@ -414,63 +403,38 @@ void output_maker<parallel_conf_t>::make(std::vector<std::shared_ptr<process<par
             comment = "No data found";
         status = status_t::N;
     }
+
+    // For each section/parameter pair -- run a comparator
     if (status == status_t::P) {
         for (auto &it : values) {
-            std::string param = it.first;
+            std::string parameter_code = it.first;
             auto &vals = it.second;
             if (functest::traits::debug) {
-                std::cout << ">> functest: output: parameter=" << param << std::endl;
+                std::cout << ">> functest: output: section/parameter=" << parameter_code << std::endl;
             }
             auto &v = vals[workpart];
             if (v.size() == 0) {
                 if (functest::traits::debug) {
-                    std::cout << ">> functest: output: nothing found for parameter: " << param << std::endl;
+                    std::cout << ">> functest: output: nothing found for section/parameter: " << parameter_code << std::endl;
                 }
-                comment = std::string("No data for par=") + param;
+                comment = std::string("No data for section/parameter=") + parameter_code;
                 status = status_t::N;
                 break;
             }
-            val_t result_val = v[0].first;
-            std::string indir = v[0].second;
-            if (v.size() > 1) {
-                sort(v.begin(), v.end());
-                auto diff = v.front().first - v.back().first;
-                if (diff != 0) {
-                    if (functest::traits::debug) {
-                        std::cout << ">> functest: v.front() != v.back(). ATTEMPTS COMPARISON FAILED!" << std::endl;
-                    }
-                    comment = std::string("Attempts comparison failed par=") + param + 
-                              std::string(" diff=") + helpers::flt2str(fabs(diff)) +
-                              std::string(" dir=") + v.front().second +
-                              std::string(" dir2=") + v.back().second;
-                              ; 
-                    status = status_t::F;
-                    break;
-                }
-            }
-            double diff = fabs(result_val - testitem.base[param]);
-            double tolerance = testitem.get_tolerance(param, pconf.first, pconf.second);
-            if (diff > tolerance) {
-                if (functest::traits::debug) {
-                    std::cout << ">> functest: diff > " << tolerance << ". GOLD VALUE COMPARISON FAILED!" << std::endl;
-                }
-                comment = std::string("Gold value comparison failed par=") + param + 
-                          std::string(" diff=") + helpers::flt2str(diff) + 
-                          std::string(" tol=") + helpers::flt2str(tolerance) + 
-                          std::string(" expected=") + helpers::flt2str(testitem.base[param]) +
-                          std::string(" acquired=") + helpers::flt2str(result_val) +
-                          std::string(" dir=") + indir; 
-                status = status_t::F;
+            status = v[0]->check_attempts_equality(v, comment);
+            if (status != status_t::P)
                 break;
-            }
+            status = v[0]->compare(comment);
+            if (status != status_t::P)
+                break;
         }
     }
+
+    // Make a result record for this testitem
     auto r = functest::traits::make_result(wconf, pconf, {"", ""}, workpart, status_to_string(status), comment);
     r->to_yaml(out);
-    nresults++;
     std::cout << "OUTPUT: functest: {" << wconf.first << "," << wconf.second << "}"
-              << " on parallel conf: {" << pconf.first << "," << pconf.second << "} " << nresults
-              << " resulting items registered" << std::endl;
+              << " on parallel conf: {" << pconf.first << "," << pconf.second << "} " << std::endl;
 }
 
 template class input_maker<functest::traits::parallel_conf_t>;
