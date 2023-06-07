@@ -21,6 +21,8 @@
 #include <string>
 #include <memory>
 #include <fstream>
+#include <sstream>
+#include <variant>
 
 #include "modules/functest/traits.h"
 #include "scope.h"
@@ -29,9 +31,29 @@
 
 namespace functest {
 
+static inline bool is_int(const std::string& s) {
+    if (s.empty() || ((!isdigit(s[0])) && (s[0] != '-') && (s[0] != '+')))
+        return false;
+    char* p;
+    strtol(s.c_str(), &p, 10);
+    return (*p == 0);
+}
+
+static inline bool is_float(const std::string& s) {
+    std::istringstream iss(s);
+    double value;
+    return (iss >> value) && (iss.eof());
+}
+
+static inline bool is_bool(const std::string& s) {
+    return s == "true" || s == "false";
+}
+
+using descr_t = std::variant<double, int, bool, std::string, std::vector<std::string>>;
+
 struct test_item_t {
     std::string name;
-    std::map<std::string, double> base;
+    std::map<std::string, descr_t> base;
     protected:
 	std::vector<std::pair<std::string, std::string>> prereq;
 	std::map<std::string, std::map<std::pair<int, int>, double>> tolerance_variations;
@@ -210,12 +232,46 @@ struct test_item_t {
                                                  int n, 
                                                  int ppn, 
                                                  const std::string &indir) {
-        auto c = std::make_shared<absolute_numeric_value_comparator<double>>();
-        c->base = base[parameter_code];
-        c->tolerance = get_tolerance(parameter_code, n, ppn);
-        c->parameter_code = parameter_code;
-        c->dir = indir;
-        return c;
+        bool is_scalar = std::holds_alternative<double>(base[parameter_code]) ||
+                         std::holds_alternative<int>(base[parameter_code]) ||
+                         std::holds_alternative<bool>(base[parameter_code]);
+        if (is_scalar) {
+            std::shared_ptr<comparator_t> retvalue;
+            if (std::holds_alternative<double>(base[parameter_code])) {
+                auto c = std::make_shared<absolute_numeric_value_comparator<double>>();
+                c->base = std::get<double>(base[parameter_code]);
+                c->tolerance = get_tolerance(parameter_code, n, ppn);
+                retvalue = c;
+            } else if (std::holds_alternative<int>(base[parameter_code])) {
+                auto c = std::make_shared<absolute_numeric_value_comparator<int>>();
+                c->base = std::get<int>(base[parameter_code]);
+                c->tolerance = get_tolerance(parameter_code, n, ppn);
+                retvalue = c;
+            } else if (std::holds_alternative<bool>(base[parameter_code])) {
+                auto c = std::make_shared<absolute_nonnumeric_value_comparator<bool>>();
+                c->base = std::get<bool>(base[parameter_code]);
+                retvalue = c;
+            } else if (std::holds_alternative<std::string>(base[parameter_code])) {
+                auto c = std::make_shared<absolute_nonnumeric_value_comparator<std::string>>();
+                c->base = std::get<std::string>(base[parameter_code]);
+                retvalue = c;
+            }
+            retvalue->parameter_code = parameter_code;
+            retvalue->dir = indir;
+            return retvalue;
+        } else {
+            if (std::holds_alternative<std::vector<std::string>>(base[parameter_code])) {
+                auto &tokens = std::get<std::vector<std::string>>(base[parameter_code]);
+                assert(tokens.size() != 0);
+                /*
+                   auto &keyword = tokens[0];
+                
+                 * if (keyword == "relative") ... interpret other tokens, make relative comparator
+                 */
+                assert(0 && "Not implemented");
+            }
+        }
+        return std::shared_ptr<comparator_t>(nullptr);
     }
 
     void load(const std::string &_name) {
@@ -268,7 +324,33 @@ struct test_item_t {
         const auto &vals = item["values"].as<YAML::Node>();
         for (auto it = vals.begin(); it != vals.end(); ++it) {
 			const auto &param = it->first.as<std::string>();
-            base[param] = it->second.as<double>();
+            auto &descr = it->second;
+            //base[param] = it->second.as<double>();
+            if (descr.IsSequence()) {
+                base[param] = std::vector<std::string>();
+                auto &tokens = std::get<std::vector<std::string>>(base[param]);
+                for (YAML::const_iterator it = descr.begin(); it != descr.end(); ++it) {
+                    tokens.push_back(it->as<std::string>());
+                }
+            } else if (descr.IsScalar()) {
+                std::string str = descr.as<std::string>();
+                bool converted = false;
+                if (!converted && is_int(str)) {
+                    base[param] = descr.as<int>();
+                    converted = true;
+                }
+                if (!converted && is_float(str)) {
+                    base[param] = descr.as<double>();
+                    converted = true;
+                }
+                if (!converted && is_bool(str)) {
+                    base[param] = descr.as<bool>();
+                    converted = true;
+                }
+                if (!converted) {
+                    base[param] = descr.as<std::string>();
+                }
+            }
 			load_tolerance_from_common_params(stream, param);
         }
         load_skip_flag_from_common_params(stream, name);

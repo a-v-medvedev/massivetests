@@ -22,19 +22,37 @@ struct comparator_t {
     std::string dir;
     virtual bool acquire_result_data_piece(const YAML::Node &stream, const std::string &section, const std::string &parameter) = 0;
     virtual status_t check_attempts_equality(std::vector<std::shared_ptr<comparator_t>> &v, std::string &comment) = 0;
-    virtual status_t compare(std::string &comment) = 0;
+    virtual status_t compare(std::string &comment) const = 0;
     virtual bool operator<(const comparator_t &other) const = 0;
 };
 
 template <typename val_t>
-struct absolute_numeric_value_comparator : comparator_t {
+struct basic_value_comparator : public comparator_t {
     val_t result;
     val_t base;
+    virtual bool acquire_result_data_piece(const YAML::Node &stream, const std::string &section, const std::string &parameter);
+    virtual status_t check_attempts_equality(std::vector<std::shared_ptr<comparator_t>> &v, std::string &comment);
+    virtual status_t compare(std::string &comment) const override { (void)comment; return status_t::N; }
+    virtual bool operator<(const comparator_t &other) const;
+};
+
+template <typename val_t>
+struct absolute_numeric_value_comparator : public basic_value_comparator<val_t> {
+    using basic_value_comparator<val_t>::parameter_code;
+    using basic_value_comparator<val_t>::dir;
+    using basic_value_comparator<val_t>::result;
+    using basic_value_comparator<val_t>::base;
     val_t tolerance;
-    virtual bool acquire_result_data_piece(const YAML::Node &stream, const std::string &section, const std::string &parameter) override;
-    virtual status_t check_attempts_equality(std::vector<std::shared_ptr<comparator_t>> &v, std::string &comment) override;
-    virtual status_t compare(std::string &comment) override;
-    virtual bool operator<(const comparator_t &other) const override;
+    virtual status_t compare(std::string &comment) const override;
+};
+
+template <typename val_t>
+struct absolute_nonnumeric_value_comparator : public basic_value_comparator<val_t> {
+    using basic_value_comparator<val_t>::parameter_code;
+    using basic_value_comparator<val_t>::dir;
+    using basic_value_comparator<val_t>::result;
+    using basic_value_comparator<val_t>::base;
+    virtual status_t compare(std::string &comment) const override;
 };
 
 }

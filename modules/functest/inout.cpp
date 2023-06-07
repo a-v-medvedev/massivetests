@@ -116,11 +116,13 @@ bool input_maker<parallel_conf_t>::exec_shell_command(const parallel_conf_t &pco
     }
 	auto timeout = testitem.get_timeout(pconf.first, pconf.second);
 	command += std::string("TIMEOUT=") + std::to_string(timeout) + " ";
+    /*
     for (const auto &kv : testitem.base) {
         std::string replaced(kv.first);
         helpers::subst(replaced, "/", "_");
         command += std::string("TESTITEM__") + replaced + "=" + std::to_string(kv.second) + " ";
     }
+    */
     char buffer[128]; // buffer to read the command's output
     FILE* pipe = popen(command.c_str(), "r"); // open a pipe to the command
     if (!pipe) {
