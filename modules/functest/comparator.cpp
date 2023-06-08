@@ -37,21 +37,6 @@
 
 namespace functest {
 
-template <typename T>
-std::string conv2str(const T &x);
-
-template <>
-std::string conv2str<double>(const double &x) { return helpers::flt2str(x); }
-
-template <>
-std::string conv2str<int>(const int &x) { return std::to_string(x); }
-
-template <>
-std::string conv2str<bool>(const bool &x) { return (x ? "true" : "false"); }
-
-template <>
-std::string conv2str<std::string>(const std::string &x) { return x; }
-
 template <typename val_t>
 bool basic_value_comparator<val_t>::acquire_result_data_piece(const YAML::Node &stream, 
                                                               const std::string &section, 
@@ -98,8 +83,8 @@ status_t basic_value_comparator<val_t>::check_attempts_equality(std::vector<std:
             std::cout << ">> functest: v.front() != v.back(). ATTEMPTS COMPARISON FAILED!" << std::endl;
         }
         comment = std::string("Attempts comparison failed section/parameter=") + parameter_code + 
-            std::string(" front=") + conv2str(front.result) +
-            std::string(" back=") + conv2str(back.result) +
+            std::string(" front=") + helpers::conv2str(front.result) +
+            std::string(" back=") + helpers::conv2str(back.result) +
             std::string(" dir=") + front.dir +
             std::string(" dir2=") + back.dir;
         return status_t::F;
@@ -138,8 +123,8 @@ status_t absolute_nonnumeric_value_comparator<val_t>::compare(std::string &comme
             std::cout << ">> functest: result!=base" << ". GOLD VALUE COMPARISON FAILED!" << std::endl;
         }
         comment = std::string("Gold value comparison failed section/parameter=") + parameter_code + 
-            std::string(" expected=") + conv2str(base) + 
-            std::string(" acquired=") + conv2str(result) +
+            std::string(" expected=") + helpers::conv2str(base) + 
+            std::string(" acquired=") + helpers::conv2str(result) +
             std::string(" dir=") + dir; 
         return status_t::F;
     }

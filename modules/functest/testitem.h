@@ -31,24 +31,6 @@
 
 namespace functest {
 
-static inline bool is_int(const std::string& s) {
-    if (s.empty() || ((!isdigit(s[0])) && (s[0] != '-') && (s[0] != '+')))
-        return false;
-    char* p;
-    strtol(s.c_str(), &p, 10);
-    return (*p == 0);
-}
-
-static inline bool is_float(const std::string& s) {
-    std::istringstream iss(s);
-    double value;
-    return (iss >> value) && (iss.eof());
-}
-
-static inline bool is_bool(const std::string& s) {
-    return s == "true" || s == "false";
-}
-
 using descr_t = std::variant<double, int, bool, std::string, std::vector<std::string>>;
 
 struct test_item_t {
@@ -335,15 +317,15 @@ struct test_item_t {
             } else if (descr.IsScalar()) {
                 std::string str = descr.as<std::string>();
                 bool converted = false;
-                if (!converted && is_int(str)) {
+                if (!converted && helpers::is_int(str)) {
                     base[param] = descr.as<int>();
                     converted = true;
                 }
-                if (!converted && is_float(str)) {
+                if (!converted && helpers::is_float(str)) {
                     base[param] = descr.as<double>();
                     converted = true;
                 }
-                if (!converted && is_bool(str)) {
+                if (!converted && helpers::is_bool(str)) {
                     base[param] = descr.as<bool>();
                     converted = true;
                 }

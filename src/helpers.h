@@ -108,6 +108,24 @@ static inline std::vector<int> vstr_to_vint(const std::vector<std::string> &from
     return to;
 }
 
+static inline bool is_int(const std::string& s) {
+    if (s.empty() || ((!isdigit(s[0])) && (s[0] != '-') && (s[0] != '+')))
+        return false;
+    char* p;
+    strtol(s.c_str(), &p, 10);
+    return (*p == 0);
+}
+
+static inline bool is_float(const std::string& s) {
+    std::istringstream iss(s);
+    double value;
+    return (iss >> value) && (iss.eof());
+}
+
+static inline bool is_bool(const std::string& s) {
+    return s == "true" || s == "false";
+}
+
 template <typename T>
 T convert(const std::string &value);
 
@@ -132,6 +150,20 @@ static inline std::string flt2str(double x) {
     return ss.str();
 }
 
+template <typename T>
+std::string conv2str(const T &x);
+
+template <>
+std::string conv2str<double>(const double &x);
+
+template <>
+std::string conv2str<int>(const int &x);
+
+template <>
+std::string conv2str<bool>(const bool &x);
+
+template <>
+std::string conv2str<std::string>(const std::string &x);
 
 template <typename KEY, typename VALUE>
 std::vector<std::pair<KEY, VALUE>> parsers_map_to_vector(const args_parser &parser,

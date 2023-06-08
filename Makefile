@@ -14,7 +14,7 @@ override LDFLAGS += -L$(THIRDPARTY)/argsparser.bin -Wl,-rpath -Wl,$(THIRDPARTY)/
 endif
 
 BINARY = massivetest
-OBJS = src/massivetest.o src/helpers.o modules/$(MODULE)/inout.o modules/$(MODULE)/traits.o modules/$(MODULE)/comparator.o
+OBJS = src/massivetest.o src/helpers.o modules/$(MODULE)/input.o modules/$(MODULE)/output.o modules/$(MODULE)/traits.o modules/$(MODULE)/comparator.o
 
 $(BINARY): module.h $(OBJS) 
 	g++ -o $@ $(OBJS) $(LDFLAGS)

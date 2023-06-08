@@ -34,4 +34,16 @@ size_t convert<size_t>(const std::string &value) {
     return std::stoul(value);
 }
 
+template <>
+std::string conv2str<double>(const double &x) { return helpers::flt2str(x); }
+
+template <>
+std::string conv2str<int>(const int &x) { return std::to_string(x); }
+
+template <>
+std::string conv2str<bool>(const bool &x) { return bool2str(x); }
+
+template <>
+std::string conv2str<std::string>(const std::string &x) { return x; }
+
 } // namespace helpers
