@@ -37,19 +37,6 @@
 #include "helpers.h"
 #include "results.h"
 
-#ifndef NATTEMPTS
-#define NATTEMPTS 5   // was: 100 for Lom2 FIXME make it an external cmdline param
-#endif
-
-#ifndef SLEEPTIME
-#define SLEEPTIME 10   // was: 100 for Lom2  FIXME make it an external cmdline param
-#endif
-
-#ifndef MISSING_FILES_FATAL // FIXME make it an external cmdline param
-#define MISSING_FILES_FATAL 0
-#endif
-
-
 namespace functest {
 
 static const std::string status_to_string(status_t st) {
@@ -70,7 +57,7 @@ static const std::string status_to_string(status_t st) {
 static status_t check_if_failed(const std::string &s, const std::string &jid) {
     std::string stackfile = s + "/stacktrace." + jid;
     std::ifstream in;
-	if (helpers::try_to_open_file<NATTEMPTS, SLEEPTIME>(in, stackfile)) {
+	if (helpers::try_to_open_file(in, stackfile, functest::traits::open_outfile_nattempts, functest::traits::open_outfile_sleeptime)) {
 		std::cout << "OUTPUT: found stackfile: " << stackfile << std::endl;
 		std::string status;
 		std::getline(in, status);
@@ -173,12 +160,12 @@ void output_maker<parallel_conf_t>::make(std::vector<std::shared_ptr<process<par
 
         // Application result YAML -- check if it exists
         std::ifstream in;
-        if (!helpers::try_to_open_file<NATTEMPTS, SLEEPTIME>(in, infile)) {
-#if MISSING_FILES_FATAL            
-            std::cout << "OUTPUT: functest: stop processing: can't open input file: " << infile
-                      << std::endl; 
-            return;
-#endif            
+        if (!helpers::try_to_open_file(in, infile, functest::traits::open_outfile_nattempts, functest::traits::open_outfile_sleeptime)) {
+            if (functest::traits::missing_files_fatal) {
+                std::cout << "OUTPUT: functest: stop processing: can't open input file: " << infile
+                          << std::endl; 
+                return;
+            }
             std::cout << "OUTPUT: functest: warning: can't open input file: " << infile
                       << std::endl;
             continue;
@@ -212,10 +199,11 @@ void output_maker<parallel_conf_t>::make(std::vector<std::shared_ptr<process<par
             break;
         }
     }
-    // FIXME consider this test a command-line switchable option
-#if MISSING_FILES_FATAL            
-    assert(values.size() == attempts.size());
-#endif
+
+    if (functest::traits::missing_files_fatal) {
+        assert(values.size() == attempts.size());
+    }
+
     attempts.resize(0);
 
     // Check if no actual data for any section/parameter pair is acquired

@@ -29,10 +29,6 @@
 #include "process.h"
 #include "comparator.h"
 
-#define DEFAULT_TIMEOUT 15  // FIXME make it a cmdline param
-#define DEFAULT_TOLERANCE_FLOAT 1e-8  // FIXME make it a cmdline param
-#define DEFAULT_TOLERANCE_INT 1  // FIXME make it a cmdline param
-
 namespace functest {
 
 using descr_t = std::variant<double, int, bool, std::string, std::vector<std::string>>;
@@ -43,10 +39,10 @@ struct test_item_t {
     std::map<std::string, descr_t> base;
     protected:
 	std::vector<std::pair<std::string, std::string>> prereq;
+    std::map<std::pair<int, int>, bool> skip_variations;
+	std::map<std::pair<int, int>, unsigned> timeout_variations;
 	std::map<std::pair<int, int>, double> tolerance_float_variations;
 	std::map<std::pair<int, int>, unsigned> tolerance_int_variations;
-	std::map<std::pair<int, int>, unsigned> timeout_variations;
-    std::map<std::pair<int, int>, bool> skip_variations;
     bool skip;
     unsigned timeout;
     double tolerance_float;
@@ -96,52 +92,46 @@ struct test_item_t {
             default_value = variations.find(zero)->second;
         }
         if (variations.find(id) != variations.end()) {
-            return variations.find(zero)->second;
+            return variations.find(id)->second;
         }
 		return default_value;
     }
 
     public:
 	void load_basic_common_params(const YAML::Node &stream) {
-		bool have_timeout_key = stream["timeout"]; 
-        if (have_timeout_key) {
+        if (stream["timeout"]) {
             timeout = stream["timeout"].as<unsigned>();
         }
-		bool have_skip_key = stream["skip"]; 
-        if (have_skip_key) {
+        if (stream["skip"]) {
             skip = stream["skip"].as<bool>();
         }
-		bool have_tolerance_int_key = stream["tolerance_int"]; 
-        if (have_tolerance_int_key) {
+        if (stream["tolerance_int"]) {
             tolerance_int = stream["tolerance_int"].as<unsigned>();
         }
-		bool have_tolerance_float_key = stream["tolerance_float"]; 
-        if (have_tolerance_float_key) {
+        if (stream["tolerance_float"]) {
             tolerance_float = stream["tolerance_float"].as<double>();
         }
-		bool have_tolerance_float_kind_key = stream["tolerance_float_kind"]; 
-        if (have_tolerance_float_kind_key) {
-            tolerance_float_kind = (stream["tolerance_float_kind"].as<std::string>() == "absolute" ? ABSOLUTE : RELATIVE);
+        if (stream["tolerance_float_kind"]) {
+            auto kind = stream["tolerance_float_kind"].as<std::string>();
+            if (kind != "absolute" && kind != "relative") {
+                assert(0 && "wrong or not implemented tolerance kind");
+            }
+            tolerance_float_kind = (kind == "absolute" ? ABSOLUTE : RELATIVE);
         }
-		bool have_per_pconf_key = stream["per-pconf"]; 
-        if (have_per_pconf_key) {
+        if (stream["per-pconf"]) {
             const auto &ppconf = stream["per-pconf"].as<YAML::Node>();
             if (!ppconf.IsMap()) 
                 return;
-            bool have_timeout_key = ppconf["timeout"];
-            if (have_timeout_key) {
+            if (ppconf["timeout"]) {
                 load_variations<unsigned>(ppconf["timeout"].as<YAML::Node>(), timeout, timeout_variations);           
             }
-            bool have_skip_key = ppconf["skip"]; 
-            if (have_skip_key) {
+            if (ppconf["skip"]) {
                 load_variations<bool>(ppconf["skip"].as<YAML::Node>(), skip, skip_variations);
             }
-            bool have_tolerance_int_key = ppconf["tolerance_int"]; 
-            if (have_tolerance_int_key) {
+            if (ppconf["tolerance_int"]) {
                 load_variations<unsigned>(ppconf["tolerance_int"].as<YAML::Node>(), tolerance_int, tolerance_int_variations);
             }
-            bool have_tolerance_float_key = ppconf["tolerance_float"]; 
-            if (have_tolerance_float_key) {
+            if (ppconf["tolerance_float"]) {
                 load_variations<double>(ppconf["tolerance_float"].as<YAML::Node>(), tolerance_float, tolerance_float_variations);
             }
         }
@@ -198,11 +188,13 @@ struct test_item_t {
                     c->base = std::get<double>(base[parameter_code]);
                     c->tolerance = get_tolerance_float(n, ppn);
                     retvalue = c;
-                } else {
+                } else if (get_tolerance_float_kind() == RELATIVE) {
                     auto c = std::make_shared<relative_numeric_value_comparator<double>>();
                     c->base = std::get<double>(base[parameter_code]);
                     c->tolerance = get_tolerance_float(n, ppn);
                     retvalue = c;
+                } else {
+                    assert(0 && "not implemented");
                 }
             } else if (std::holds_alternative<int>(base[parameter_code])) {
                 auto c = std::make_shared<absolute_numeric_value_comparator<int>>();
@@ -256,10 +248,10 @@ struct test_item_t {
             skip = true;
             return;
         }
-        timeout = DEFAULT_TIMEOUT;
+        timeout = functest::traits::default_timeout;
         skip = false;
-        tolerance_int = DEFAULT_TOLERANCE_INT;
-        tolerance_float = DEFAULT_TOLERANCE_FLOAT;
+        tolerance_int = functest::traits::default_tolerance_int;
+        tolerance_float = functest::traits::default_tolerance_float;
         tolerance_float_kind = ABSOLUTE;
         if (stream["common_params"]) {
             const auto &cp = stream["common_params"];

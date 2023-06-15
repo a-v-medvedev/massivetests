@@ -199,10 +199,9 @@ static inline void trunc_file(const std::string &name) {
     std::ofstream ofs(name, std::ios_base::out | std::ios_base::trunc);
 }
 
-template <int nattempts, int sleeptime>
-static inline bool try_to_open_file(std::ifstream &in, const std::string &name) {
+static inline bool try_to_open_file(std::ifstream &in, const std::string &name, unsigned nattempts, unsigned sleeptime) {
     bool success = false;
-    int n = 0;
+    unsigned n = 0;
     while (!success) {
         in.open(name);
         if (!in.is_open()) {

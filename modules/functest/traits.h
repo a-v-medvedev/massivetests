@@ -38,7 +38,14 @@ struct traits {
     using workpart_t = std::pair<std::string, int>;
     using value_t = std::string;
     static std::string application;
-    static bool debug;
+    static bool debug; // FIXME make it a cmdline param
+    static constexpr unsigned default_timeout = 15; // FIXME make it a cmdline param
+    static constexpr double default_tolerance_float = 1.0e-8; // FIXME make it a cmdline param
+    static constexpr unsigned default_tolerance_int = 1; // FIXME make it a cmdline param
+    static constexpr unsigned open_outfile_nattempts = 5; // was: 100 for Lom2 FIXME make it an external cmdline param
+    static constexpr unsigned open_outfile_sleeptime = 10; // was: 100 for Lom2  FIXME make it an external cmdline param
+    static constexpr bool missing_files_fatal = false; // FIXME make it an external cmdline param
+
     std::vector<workload_conf_t> parse_and_make_workload_confs(const args_parser &parser,
                                                                const std::string &name);
     std::vector<target_parameter_t> parse_and_make_target_parameters(const args_parser &parser,
@@ -66,8 +73,6 @@ struct traits {
 												 const workpart_t &ws, 
 												 value_t status,
 												 const std::string &comment = "");
-//	    return std::make_shared<result<traits>>(wc, pc, tp, ws, value, comment);
-//    }
     static std::string workload_conf_to_string(const workload_conf_t &c) {
         if (c.first == "" && c.second == "")
             return "";
