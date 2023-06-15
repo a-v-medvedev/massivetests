@@ -107,7 +107,7 @@ status_t absolute_numeric_value_comparator<val_t>::compare(std::string &comment)
         }
         comment = std::string("Gold value comparison failed section/parameter=") + parameter_code + 
             std::string(" diff=") + helpers::flt2str(diff) + 
-            std::string(" tol=") + helpers::flt2str(tolerance) + 
+            std::string(" abs.tol=") + helpers::flt2str(tolerance) + 
             std::string(" expected=") + helpers::flt2str(base) + 
             std::string(" acquired=") + helpers::flt2str(result) +
             std::string(" dir=") + dir; 
@@ -135,5 +135,25 @@ template class absolute_numeric_value_comparator<double>;
 template class absolute_numeric_value_comparator<int>;
 template class absolute_nonnumeric_value_comparator<bool>;
 template class absolute_nonnumeric_value_comparator<std::string>;
+
+template <typename val_t>
+status_t relative_numeric_value_comparator<val_t>::compare(std::string &comment) const {
+    double diff = fabs((result - base) / base); 
+    if (diff > tolerance) {
+        if (functest::traits::debug) {
+            std::cout << ">> functest: diff/base > " << tolerance << ". GOLD VALUE COMPARISON FAILED!" << std::endl;
+        }
+        comment = std::string("Gold value comparison failed section/parameter=") + parameter_code + 
+            std::string(" diff=") + helpers::flt2str(diff) + 
+            std::string(" rel.tol=") + helpers::flt2str(tolerance) + 
+            std::string(" expected=") + helpers::flt2str(base) + 
+            std::string(" acquired=") + helpers::flt2str(result) +
+            std::string(" dir=") + dir; 
+        return status_t::F;
+    }
+    return status_t::P;
+}
+
+template class relative_numeric_value_comparator<double>;
 
 }

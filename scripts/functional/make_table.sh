@@ -35,10 +35,11 @@ function parse_summary() {
             if (\$4!="-") 
                 RESULT[IDX]=RESULT[IDX] "(#" \$4 ")"; 
             if (\$3 == "S") S++;
-            if (\$3 == "P") P++;
-            if (\$3 == "F") F++;
-            if (\$3 == "N") N++;
-            if (\$3 == "T" || \$3 == "A" || \$3 == "C" || \$3 == "E") TACE++;
+            else if (\$3 == "P") P++;
+            else if (\$3 == "F") F++;
+            else if (\$3 == "N") N++;
+            else if (\$3 == "T" || \$3 == "A" || \$3 == "C" || \$3 == "E") TACE++;
+            else P++;
         } 
         END { 
             for (i in RESULT) { 

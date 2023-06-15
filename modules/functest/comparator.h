@@ -47,6 +47,16 @@ struct absolute_numeric_value_comparator : public basic_value_comparator<val_t> 
 };
 
 template <typename val_t>
+struct relative_numeric_value_comparator : public basic_value_comparator<val_t> {
+    using basic_value_comparator<val_t>::parameter_code;
+    using basic_value_comparator<val_t>::dir;
+    using basic_value_comparator<val_t>::result;
+    using basic_value_comparator<val_t>::base;
+    val_t tolerance;
+    virtual status_t compare(std::string &comment) const override;
+};
+
+template <typename val_t>
 struct absolute_nonnumeric_value_comparator : public basic_value_comparator<val_t> {
     using basic_value_comparator<val_t>::parameter_code;
     using basic_value_comparator<val_t>::dir;

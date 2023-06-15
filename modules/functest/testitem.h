@@ -29,25 +29,31 @@
 #include "process.h"
 #include "comparator.h"
 
+#define DEFAULT_TIMEOUT 15  // FIXME make it a cmdline param
+#define DEFAULT_TOLERANCE_FLOAT 1e-8  // FIXME make it a cmdline param
+#define DEFAULT_TOLERANCE_INT 1  // FIXME make it a cmdline param
+
 namespace functest {
 
 using descr_t = std::variant<double, int, bool, std::string, std::vector<std::string>>;
+enum tolerance_float_kind_t { ABSOLUTE, RELATIVE };
 
 struct test_item_t {
     std::string name;
     std::map<std::string, descr_t> base;
     protected:
 	std::vector<std::pair<std::string, std::string>> prereq;
-	std::map<std::string, std::map<std::pair<int, int>, double>> tolerance_variations;
+	std::map<std::pair<int, int>, double> tolerance_float_variations;
+	std::map<std::pair<int, int>, unsigned> tolerance_int_variations;
 	std::map<std::pair<int, int>, unsigned> timeout_variations;
-    std::map<std::string, std::map<std::pair<int, int>, bool>> skip_flag_variations;
-    bool skip = false;
-    unsigned timeout = 0;
-    unsigned def_timeout = 15;  // FIXME make it a cmdline param
-    double tolerance = -1;
-    double def_tolerance = 1e-8; // FIXME make it a cmdline param
-    public:
+    std::map<std::pair<int, int>, bool> skip_variations;
+    bool skip;
+    unsigned timeout;
+    double tolerance_float;
+    unsigned tolerance_int;
+    tolerance_float_kind_t tolerance_float_kind;
     std::string preproc, postproc;
+
     bool get_int_pair_from_string(const std::string &str, std::pair<int, int> &output) {
         auto s = helpers::str_split(str, '/');
         if (s.size() != 2)
@@ -68,122 +74,77 @@ struct test_item_t {
         return true;
     }
 
-	void load_simple_common_params(YAML::Node &stream) {
-		if (!stream["common_params"]) 
-			return;
-		bool have_timeout_key = stream["common_params"].as<YAML::Node>()["timeout"]; 
-        const auto &cp = stream["common_params"].as<YAML::Node>();
-        if (have_timeout_key)
-		{
-			const auto &timeout_dict = cp["timeout"].as<YAML::Node>();
-			std::pair<int, int> zero{0, 0};
-			unsigned default_timeout = timeout;
-			if (timeout_dict["default"]) {
-				default_timeout = timeout_dict["default"].as<unsigned>();
-			}
-			timeout_variations[zero] = default_timeout;
-			for (YAML::const_iterator it = timeout_dict.begin(); it != timeout_dict.end(); ++it) {
-				const auto& key = it->first.as<std::string>();
-				unsigned val = it->second.as<unsigned>();
-				if (key == "default")
-					continue;
-				std::pair<int, int> id;
-				if (!get_int_pair_from_string(key, id))
-					continue;
-				timeout_variations[id] = val;
-			}
-		}
-	}
-
-	void load_tolerance_from_common_params(YAML::Node &stream, const std::string &param) {
-		if (!stream["common_params"]) 
-			return;
-		if (!(stream["common_params"]).as<YAML::Node>()["tolerance"]) 
-			return;
-        const auto &cp = stream["common_params"].as<YAML::Node>();
-		const auto &dict = cp["tolerance"].as<YAML::Node>();
-		if (!dict[param])
-			return;
-		const auto &tolerance_dict = dict[param].as<YAML::Node>();
-        double default_tolerance = tolerance;
-        if (tolerance_dict["default"]) {
-            default_tolerance = tolerance_dict["default"].as<double>();
-        }
-        std::pair<int, int> zero{0, 0};
-        tolerance_variations[param][zero] = default_tolerance;
-        for (YAML::const_iterator it = tolerance_dict.begin(); it != tolerance_dict.end(); ++it) {
+    template <typename T>
+    void load_variations(const YAML::Node &dict, T default_value, std::map<std::pair<int, int>, T> &result) {
+        static const std::pair<int, int> zero{0, 0};
+        result[zero] = default_value;
+        for (YAML::const_iterator it = dict.begin(); it != dict.end(); ++it) {
             const auto& key = it->first.as<std::string>();
-            bool val = it->second.as<double>();
-            if (key == "default")
-                continue;
+            unsigned value = it->second.as<T>();
             std::pair<int, int> id;
             if (!get_int_pair_from_string(key, id))
-                continue;            
-            tolerance_variations[param][id] = val;
-        }
-	}
-
-    void load_skip_flag_from_common_params(YAML::Node &stream, const std::string &param) {
-		if (!stream["common_params"]) 
-			return;
-		if (!(stream["common_params"]).as<YAML::Node>()["skip"]) 
-			return;
-        const auto &cp = stream["common_params"].as<YAML::Node>();
-		const auto &dict = cp["skip"].as<YAML::Node>();
-		if (!dict[param])
-			return;
-		const auto &skip_dict = dict[param].as<YAML::Node>();
-        bool default_skip = false;
-        if (skip_dict["default"]) {
-            default_skip = skip_dict["default"].as<bool>();
-        }
-        std::pair<int, int> zero{0, 0};
-        skip_flag_variations[param][zero] = default_skip;
-        for (YAML::const_iterator it = skip_dict.begin(); it != skip_dict.end(); ++it) {
-            const auto& key = it->first.as<std::string>();
-            bool val = it->second.as<bool>();
-            if (key == "default")
                 continue;
-            std::pair<int, int> id;
-            if (!get_int_pair_from_string(key, id))
-                continue;            
-            skip_flag_variations[param][id] = val;
+            result[id] = value;
         }
-	}
+    }
 
-	double get_tolerance(const std::string &param, int n, int ppn = 1) {
-        if (tolerance != -1) {
-            return tolerance;
-        }
-		double default_tolerance = def_tolerance;
-		std::pair<int, int> zero(0, 0);
-		std::pair<int, int> id(n, ppn);
-		if (tolerance_variations.find(param) != tolerance_variations.end()) {
-            auto &tvp = tolerance_variations[param];
-			if (tvp.find(zero) != tvp.end()) {
-				default_tolerance = tvp[zero];
-			}
-			if (tvp.find(id) != tvp.end()) {
-				return tvp[id];
-			}
-		}
-		return default_tolerance;
-	}
-
-    unsigned get_timeout(int n, int ppn = 1) const {
-        if (timeout != 0) {
-            return timeout;
-        }
-        unsigned default_timeout = def_timeout;
+    template <typename T>
+    T search_variations_by_n_ppn(int n, int ppn, const std::map<std::pair<int, int>, T> &variations, T default_value) const {
         std::pair<int, int> zero(0, 0);
         std::pair<int, int> id(n, ppn);
-		if (timeout_variations.find(zero) != timeout_variations.end()) {
-			default_timeout = timeout_variations.find(zero)->second;
-		}
-		if (timeout_variations.find(id) != timeout_variations.end()) {
-			return timeout_variations.find(id)->second;
-		}
-		return default_timeout;
+        if (variations.find(zero) != variations.end()) {
+            default_value = variations.find(zero)->second;
+        }
+        if (variations.find(id) != variations.end()) {
+            return variations.find(zero)->second;
+        }
+		return default_value;
+    }
+
+    public:
+	void load_basic_common_params(const YAML::Node &stream) {
+		bool have_timeout_key = stream["timeout"]; 
+        if (have_timeout_key) {
+            timeout = stream["timeout"].as<unsigned>();
+        }
+		bool have_skip_key = stream["skip"]; 
+        if (have_skip_key) {
+            skip = stream["skip"].as<bool>();
+        }
+		bool have_tolerance_int_key = stream["tolerance_int"]; 
+        if (have_tolerance_int_key) {
+            tolerance_int = stream["tolerance_int"].as<unsigned>();
+        }
+		bool have_tolerance_float_key = stream["tolerance_float"]; 
+        if (have_tolerance_float_key) {
+            tolerance_float = stream["tolerance_float"].as<double>();
+        }
+		bool have_tolerance_float_kind_key = stream["tolerance_float_kind"]; 
+        if (have_tolerance_float_kind_key) {
+            tolerance_float_kind = (stream["tolerance_float_kind"].as<std::string>() == "absolute" ? ABSOLUTE : RELATIVE);
+        }
+		bool have_per_pconf_key = stream["per-pconf"]; 
+        if (have_per_pconf_key) {
+            const auto &ppconf = stream["per-pconf"].as<YAML::Node>();
+            if (!ppconf.IsMap()) 
+                return;
+            bool have_timeout_key = ppconf["timeout"];
+            if (have_timeout_key) {
+                load_variations<unsigned>(ppconf["timeout"].as<YAML::Node>(), timeout, timeout_variations);           
+            }
+            bool have_skip_key = ppconf["skip"]; 
+            if (have_skip_key) {
+                load_variations<bool>(ppconf["skip"].as<YAML::Node>(), skip, skip_variations);
+            }
+            bool have_tolerance_int_key = ppconf["tolerance_int"]; 
+            if (have_tolerance_int_key) {
+                load_variations<unsigned>(ppconf["tolerance_int"].as<YAML::Node>(), tolerance_int, tolerance_int_variations);
+            }
+            bool have_tolerance_float_key = ppconf["tolerance_float"]; 
+            if (have_tolerance_float_key) {
+                load_variations<double>(ppconf["tolerance_float"].as<YAML::Node>(), tolerance_float, tolerance_float_variations);
+            }
+        }
     }
 
     bool get_prerequisites_flag() const {
@@ -194,20 +155,32 @@ struct test_item_t {
 		return prereq;
 	}
 
-    unsigned get_skip_flag(const std::string &param, int n, int ppn = 1) {
-        unsigned default_skip_flag = skip;
-        std::pair<int, int> zero(0, 0);
-        std::pair<int, int> id(n, ppn);
-        if (skip_flag_variations.find(param) != skip_flag_variations.end()) {
-            auto &skvp = skip_flag_variations[param];
-            if (skvp.find(zero) != skvp.end()) {
-                default_skip_flag = skvp[zero];
-            }
-            if (skvp.find(id) != skvp.end()) {
-                return skvp[id];
-            }
-        }
-		return default_skip_flag;
+    std::string get_preproc() const {
+        return preproc;
+    }
+
+    std::string get_postproc() const {
+        return postproc;
+    }
+
+    unsigned get_skip_flag(int n, int ppn = 1) const {
+        return search_variations_by_n_ppn<bool>(n, ppn, skip_variations, skip);    
+    }
+
+    unsigned get_tolerance_int(int n, int ppn = 1) const {
+        return search_variations_by_n_ppn<unsigned>(n, ppn, tolerance_int_variations, tolerance_int);    
+    }
+
+    double get_tolerance_float(int n, int ppn = 1) const {
+        return search_variations_by_n_ppn<double>(n, ppn, tolerance_float_variations, tolerance_float);    
+    }
+
+    tolerance_float_kind_t get_tolerance_float_kind() const {
+        return tolerance_float_kind;
+    }
+
+    unsigned get_timeout(int n, int ppn = 1) const {
+        return search_variations_by_n_ppn<unsigned>(n, ppn, timeout_variations, timeout);    
     }
 
     std::shared_ptr<comparator_t> get_comparator(const std::string &parameter_code, 
@@ -220,14 +193,21 @@ struct test_item_t {
         if (is_scalar) {
             std::shared_ptr<comparator_t> retvalue;
             if (std::holds_alternative<double>(base[parameter_code])) {
-                auto c = std::make_shared<absolute_numeric_value_comparator<double>>();
-                c->base = std::get<double>(base[parameter_code]);
-                c->tolerance = get_tolerance(parameter_code, n, ppn);
-                retvalue = c;
+                if (get_tolerance_float_kind() == ABSOLUTE) {
+                    auto c = std::make_shared<absolute_numeric_value_comparator<double>>();
+                    c->base = std::get<double>(base[parameter_code]);
+                    c->tolerance = get_tolerance_float(n, ppn);
+                    retvalue = c;
+                } else {
+                    auto c = std::make_shared<relative_numeric_value_comparator<double>>();
+                    c->base = std::get<double>(base[parameter_code]);
+                    c->tolerance = get_tolerance_float(n, ppn);
+                    retvalue = c;
+                }
             } else if (std::holds_alternative<int>(base[parameter_code])) {
                 auto c = std::make_shared<absolute_numeric_value_comparator<int>>();
                 c->base = std::get<int>(base[parameter_code]);
-                c->tolerance = get_tolerance(parameter_code, n, ppn);
+                c->tolerance = get_tolerance_int(n, ppn);
                 retvalue = c;
             } else if (std::holds_alternative<bool>(base[parameter_code])) {
                 auto c = std::make_shared<absolute_nonnumeric_value_comparator<bool>>();
@@ -246,9 +226,11 @@ struct test_item_t {
                 auto &tokens = std::get<std::vector<std::string>>(base[parameter_code]);
                 assert(tokens.size() != 0);
                 /*
-                   auto &keyword = tokens[0];
-                
+                 * auto &keyword = tokens[0];
                  * if (keyword == "relative") ... interpret other tokens, make relative comparator
+                 * if (keyword == "absolute") ... interpret other tokens, make absolute comparator
+                 * if (keyword == "oneof") ... interpret other tokens, make oneof comparator
+                 * if (keyword == "auxvalue") ... interpret other tokens, make auxvalue comparator
                  */
                 assert(0 && "Not implemented");
             }
@@ -274,26 +256,29 @@ struct test_item_t {
             skip = true;
             return;
         }
+        timeout = DEFAULT_TIMEOUT;
+        skip = false;
+        tolerance_int = DEFAULT_TOLERANCE_INT;
+        tolerance_float = DEFAULT_TOLERANCE_FLOAT;
+        tolerance_float_kind = ABSOLUTE;
+        if (stream["common_params"]) {
+            const auto &cp = stream["common_params"];
+		    load_basic_common_params(cp);
+            //... some additional opts from common_params??
+        }
+
         const auto &item = stream[name].as<YAML::Node>();
         if (item["options"]) {
             const auto &opts = item["options"].as<YAML::Node>();
-            if (opts["skip"]) {
-                skip = opts["skip"].as<bool>();
-            }
-            if (opts["timeout"]) {
-                timeout = opts["timeout"].as<unsigned>();
-            }
-            if (opts["tolerance"]) {
-                tolerance = opts["tolerance"].as<double>();
-            }
+            load_basic_common_params(opts);
             if (opts["preproc"]) {
                 preproc = opts["preproc"].as<std::string>();
             }
             if (opts["postproc"]) {
                 postproc = opts["postproc"].as<std::string>();
             }
-
         }
+
         if (item["prerequisites"]) {
             const auto &pnode = item["prerequisites"].as<YAML::Node>();
             for (auto it = pnode.begin(); it != pnode.end(); ++it) {
@@ -307,7 +292,6 @@ struct test_item_t {
         for (auto it = vals.begin(); it != vals.end(); ++it) {
 			const auto &param = it->first.as<std::string>();
             auto &descr = it->second;
-            //base[param] = it->second.as<double>();
             if (descr.IsSequence()) {
                 base[param] = std::vector<std::string>();
                 auto &tokens = std::get<std::vector<std::string>>(base[param]);
@@ -333,10 +317,7 @@ struct test_item_t {
                     base[param] = descr.as<std::string>();
                 }
             }
-			load_tolerance_from_common_params(stream, param);
         }
-        load_skip_flag_from_common_params(stream, name);
-		load_simple_common_params(stream);
     }
     using target_parameter_vector_t = std::vector<functest::traits::target_parameter_t>;
     target_parameter_vector_t

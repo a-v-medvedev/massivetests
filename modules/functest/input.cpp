@@ -140,7 +140,7 @@ bool input_maker<parallel_conf_t>::make(const parallel_conf_t &pconf, execution_
 	const auto &conf = scope.workload_conf.second;
 
     // If the skip flag is set, just return
-    if (testitem.get_skip_flag(workload, pconf.first, pconf.second) || env.skip) {
+    if (testitem.get_skip_flag(pconf.first, pconf.second) || env.skip) {
         env.skip = true;
         return false;
     }
@@ -186,7 +186,7 @@ bool input_maker<parallel_conf_t>::make(const parallel_conf_t &pconf, execution_
 			return false;
 		}
     } else {
-        //--- cmdline hardcoded
+        //--- cmdline hardcoded (DEPRECATED)
         env.cmdline_args = load_key + " " + env.input_yaml;
         env.cmdline_args += std::string(" ") + result_key + std::string(" ") + " result.%PSUBMIT_JOBID%.yaml";
         if (conf_key != "") {
@@ -200,17 +200,17 @@ bool input_maker<parallel_conf_t>::make(const parallel_conf_t &pconf, execution_
         if ((aux_opts = getenv("MASSIVETEST_AUX_ARGS"))) {
             env.cmdline_args += " " + std::string(aux_opts);
         }
-        //--- /cmdline hardcoded
+        //--- /cmdline hardcoded (DEPRECATED)
     }
 
 	// Make substitutions in preproc and postproc script names and args if they exist
     auto &pr = input_maker_base<parallel_conf_t>::preproc;
-    pr = testitem.preproc;
+    pr = testitem.get_preproc();
 	do_substs(pconf, pr);
 	env.preproc = pr;
 
     auto &po = input_maker_base<parallel_conf_t>::postproc;
-    po = testitem.postproc;
+    po = testitem.get_postproc();
 	do_substs(pconf, po);
 	env.postproc = po;
 	
