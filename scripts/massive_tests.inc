@@ -41,6 +41,10 @@ function check_bash_func_declared() {
     is_bash_func_declared  "$1" || fatal "$1 bash function is not defined!"
 }
 
+function are_there_files() {
+    [ $(ls -1d $1 2>/dev/null | wc -l) != "0" ]
+}
+
 function zip_X1() {
     local result=""
     local delim="$3"

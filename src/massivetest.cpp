@@ -36,8 +36,6 @@
 template <>
 int test_scope<MODULE::traits>::counter = 0;
 
-#define TOSTR(X) (#X)
-
 #include "dispatcher.h"
 #include "helpers.h"
 #include "results.h"

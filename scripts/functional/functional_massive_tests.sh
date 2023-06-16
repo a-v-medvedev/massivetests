@@ -59,10 +59,11 @@ done
 
 ./make_table.sh "$TUPLE" || exit 1 && true
 
-touch references.txt
-cp -f stats.txt references.txt table.* test_items*yaml summary/ || exit 1 && true
-if [ $(ls -1d input_*.yaml 2>/dev/null | wc -l) != "0" ]; then
-    cp -f input_*.yaml summary/ || exit 1 && true
-fi
+are_there_files "stats.txt" || exit 1 && true
+are_there_files "table.*" || exit 1 && true
 
+cp -f stats.txt table.* summary/
+are_there_files references.txt && cp -f references.txt summary/
+are_there_files "test_items*yaml" && cp -f test_items*yaml summary/
+are_there_files "input_*.yaml" && cp -f input_*.yaml summary/
 

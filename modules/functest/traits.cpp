@@ -100,12 +100,18 @@ std::shared_ptr<result_t> traits::make_result(const workload_conf_t &wc,
     return std::make_shared<result<traits>>(wc, pc, tp, ws, value, comment);
 }
 
-std::string traits::application;
 #ifdef DEBUG
 bool traits::debug = true;
 #else
 bool traits::debug = false;
 #endif
+unsigned traits::default_timeout = 15; // FIXME make it a cmdline param
+double traits::default_tolerance_float = 1.0e-8; // FIXME make it a cmdline param
+unsigned traits::default_tolerance_int = 1; // FIXME make it a cmdline param
+unsigned traits::open_outfile_nattempts = 5; // was: 100 for Lom2 FIXME make it an external cmdline param
+unsigned traits::open_outfile_sleeptime = 10; // was: 100 for Lom2  FIXME make it an external cmdline param
+bool traits::missing_files_fatal = false; // FIXME make it an external cmdline param
+
 
 } // namespace functest
 

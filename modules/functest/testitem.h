@@ -215,16 +215,46 @@ struct test_item_t {
             return retvalue;
         } else {
             if (std::holds_alternative<std::vector<std::string>>(base[parameter_code])) {
+                std::shared_ptr<comparator_t> retvalue;
                 auto &tokens = std::get<std::vector<std::string>>(base[parameter_code]);
                 assert(tokens.size() != 0);
-                /*
-                 * auto &keyword = tokens[0];
-                 * if (keyword == "relative") ... interpret other tokens, make relative comparator
-                 * if (keyword == "absolute") ... interpret other tokens, make absolute comparator
-                 * if (keyword == "oneof") ... interpret other tokens, make oneof comparator
-                 * if (keyword == "auxvalue") ... interpret other tokens, make auxvalue comparator
-                 */
-                assert(0 && "Not implemented");
+                auto &keyword = tokens[0];
+                if (keyword == "relative") {
+                    auto c = std::make_shared<relative_numeric_value_comparator<double>>();
+                    assert(tokens.size() == 3);
+                    c->base = helpers::str2value<double>(tokens[1]);
+                    if (helpers::contains(tokens[2], '%')) {
+                        auto tks = helpers::str_split(tokens[2], '%');
+                        assert(tks.size() == 2 && tks[1].empty());
+                        c->tolerance = helpers::str2value<double>(tks[0]) * 0.01;
+                    } else {
+                        c->tolerance =  helpers::str2value<double>(tokens[2]);
+                    }
+                    retvalue = c;
+                }
+                if (keyword == "absolute") {
+                    assert(tokens.size() == 3);
+                    if (helpers::is_int(tokens[1]) && helpers::is_int(tokens[2])) {
+                        auto c = std::make_shared<absolute_numeric_value_comparator<int>>();
+                        c->base = helpers::str2value<int>(tokens[1]);
+                        c->tolerance = helpers::str2value<int>(tokens[2]);
+                        retvalue = c;
+                    } else {
+                        auto c = std::make_shared<absolute_numeric_value_comparator<double>>();
+                        c->base = helpers::str2value<double>(tokens[1]);
+                        c->tolerance = helpers::str2value<double>(tokens[2]);
+                        retvalue = c;
+                    }
+                }
+                if (keyword == "oneof") {
+                    assert(0 && "not implemented");
+                }
+                if (keyword == "auxvalue") {
+                    assert(0 && "not implemented");
+                }
+                retvalue->parameter_code = parameter_code;
+                retvalue->dir = indir;
+                return retvalue;
             }
         }
         return std::shared_ptr<comparator_t>(nullptr);

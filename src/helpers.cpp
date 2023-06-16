@@ -20,30 +20,35 @@
 namespace helpers {
 
 template <>
-std::string convert<std::string>(const std::string &value) {
+std::string str2value<std::string>(const std::string &value) {
     return value;
 }
 
 template <>
-int convert<int>(const std::string &value) {
+int str2value<int>(const std::string &value) {
     return std::stoi(value);
 }
 
 template <>
-size_t convert<size_t>(const std::string &value) {
+size_t str2value<size_t>(const std::string &value) {
     return std::stoul(value);
 }
 
 template <>
-std::string conv2str<double>(const double &x) { return helpers::flt2str(x); }
+double str2value<double>(const std::string &value) {
+    return std::stod(value);
+}
 
 template <>
-std::string conv2str<int>(const int &x) { return std::to_string(x); }
+std::string value2str<double>(const double &x) { return helpers::flt2str(x); }
 
 template <>
-std::string conv2str<bool>(const bool &x) { return bool2str(x); }
+std::string value2str<int>(const int &x) { return std::to_string(x); }
 
 template <>
-std::string conv2str<std::string>(const std::string &x) { return x; }
+std::string value2str<bool>(const bool &x) { return bool2str(x); }
+
+template <>
+std::string value2str<std::string>(const std::string &x) { return x; }
 
 } // namespace helpers

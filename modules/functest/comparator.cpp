@@ -83,8 +83,8 @@ status_t basic_value_comparator<val_t>::check_attempts_equality(std::vector<std:
             std::cout << ">> functest: v.front() != v.back(). ATTEMPTS COMPARISON FAILED!" << std::endl;
         }
         comment = std::string("Attempts comparison failed section/parameter=") + parameter_code + 
-            std::string(" front=") + helpers::conv2str(front.result) +
-            std::string(" back=") + helpers::conv2str(back.result) +
+            std::string(" front=") + helpers::value2str(front.result) +
+            std::string(" back=") + helpers::value2str(back.result) +
             std::string(" dir=") + front.dir +
             std::string(" dir2=") + back.dir;
         return status_t::F;
@@ -123,8 +123,8 @@ status_t absolute_nonnumeric_value_comparator<val_t>::compare(std::string &comme
             std::cout << ">> functest: result!=base" << ". GOLD VALUE COMPARISON FAILED!" << std::endl;
         }
         comment = std::string("Gold value comparison failed section/parameter=") + parameter_code + 
-            std::string(" expected=") + helpers::conv2str(base) + 
-            std::string(" acquired=") + helpers::conv2str(result) +
+            std::string(" expected=") + helpers::value2str(base) + 
+            std::string(" acquired=") + helpers::value2str(result) +
             std::string(" dir=") + dir; 
         return status_t::F;
     }

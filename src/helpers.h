@@ -127,16 +127,19 @@ static inline bool is_bool(const std::string& s) {
 }
 
 template <typename T>
-T convert(const std::string &value);
+T str2value(const std::string &value);
 
 template <>
-std::string convert<std::string>(const std::string &value);
+std::string str2value<std::string>(const std::string &value);
 
 template <>
-int convert<int>(const std::string &value);
+int str2value<int>(const std::string &value);
 
 template <>
-size_t convert<size_t>(const std::string &value);
+size_t str2value<size_t>(const std::string &value);
+
+template <>
+double str2value<double>(const std::string &value);
 
 static inline std::string bool2str(bool v) {
     return v ? "true" : "false";
@@ -151,19 +154,23 @@ static inline std::string flt2str(double x) {
 }
 
 template <typename T>
-std::string conv2str(const T &x);
+std::string value2str(const T &x);
 
 template <>
-std::string conv2str<double>(const double &x);
+std::string value2str<double>(const double &x);
 
 template <>
-std::string conv2str<int>(const int &x);
+std::string value2str<int>(const int &x);
 
 template <>
-std::string conv2str<bool>(const bool &x);
+std::string value2str<bool>(const bool &x);
 
 template <>
-std::string conv2str<std::string>(const std::string &x);
+std::string value2str<std::string>(const std::string &x);
+
+static inline bool contains(const std::string &str, char ch) {
+    return str.find(ch) != std::string::npos;
+}
 
 template <typename KEY, typename VALUE>
 std::vector<std::pair<KEY, VALUE>> parsers_map_to_vector(const args_parser &parser,
@@ -173,7 +180,7 @@ std::vector<std::pair<KEY, VALUE>> parsers_map_to_vector(const args_parser &pars
     std::map<std::string, std::string> result_map;
     parser.get(arg_name, result_map);
     for (const auto &elem : result_map) {
-        result.push_back(element_t(convert<KEY>(elem.first), convert<VALUE>(elem.second)));
+        result.push_back(element_t(str2value<KEY>(elem.first), str2value<VALUE>(elem.second)));
     }
     std::sort(result.begin(), result.end(), [](const element_t &val1, const element_t &val2){ return val1.first < val2.first; });
     return result;
@@ -190,7 +197,7 @@ std::vector<std::pair<KEY, VALUE>> parsers_vector_to_vector(const args_parser &p
         if (A.size() != 2) {
             throw 0;
         }
-        result.push_back(std::pair<KEY, VALUE>(convert<KEY>(A[0]), convert<VALUE>(A[1])));
+        result.push_back(std::pair<KEY, VALUE>(str2value<KEY>(A[0]), str2value<VALUE>(A[1])));
     }
     return result;
 }
