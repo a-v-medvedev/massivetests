@@ -156,4 +156,35 @@ status_t relative_numeric_value_comparator<val_t>::compare(std::string &comment)
 
 template class relative_numeric_value_comparator<double>;
 
+template <typename val_t>
+status_t oneof_value_comparator<val_t>::compare(std::string &comment) const {
+    // for el in base
+    //   if el == result
+    //      found = true; break;
+    return status_t::P;
+}
+
+template class oneof_value_comparator<int>;
+template class oneof_value_comparator<std::string>;
+
+bool auxvalue_collector::acquire_result_data_piece(const YAML::Node &stream, const std::string &section, const std::string &parameter) {
+    // FIXME the same as in base???
+    return true;
+}
+
+bool auxvalue_collector::operator<(const comparator_t &other_) const {
+    // FIXME the same as in base???
+    return true;
+}
+
+status_t auxvalue_collector::check_attempts_equality(std::vector<std::shared_ptr<comparator_t>> &v, std::string &comment) {
+    // average over attemts and save the averaged result
+    return status_t::P;
+}
+
+status_t auxvalue_collector::compare(std::string &comment) const {
+    // put averaged result to aux vallues collection
+    return status_t::P;
+}
+
 }

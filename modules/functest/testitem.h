@@ -225,7 +225,7 @@ struct test_item_t {
                     c->base = helpers::str2value<double>(tokens[1]);
                     if (helpers::contains(tokens[2], '%')) {
                         auto tks = helpers::str_split(tokens[2], '%');
-                        assert(tks.size() == 2 && tks[1].empty());
+                        assert(tks.size() == 1);
                         c->tolerance = helpers::str2value<double>(tks[0]) * 0.01;
                     } else {
                         c->tolerance =  helpers::str2value<double>(tokens[2]);
@@ -246,11 +246,58 @@ struct test_item_t {
                         retvalue = c;
                     }
                 }
+                if (keyword == "equal") {
+                    assert(tokens.size() == 2);
+                    auto value = tokens[1];
+                    if (helpers::is_int(value)) {
+                        auto c = std::make_shared<absolute_numeric_value_comparator<int>>();
+                        c->base = helpers::str2value<int>(value);
+                        c->tolerance = 0;
+                        retvalue = c;
+                    } else if (helpers::is_float(value)) {
+                        assert(0 && "equality comparator is not available for floating point constants.");
+                    } else if (helpers::is_bool(value)) {
+                        auto c = std::make_shared<absolute_nonnumeric_value_comparator<bool>>();
+                        c->base = helpers::str2value<bool>(value);
+                        retvalue = c;
+                    } else {
+                        auto c = std::make_shared<absolute_nonnumeric_value_comparator<std::string>>();
+                        c->base = value;
+                        retvalue = c;
+                    }
+                }
                 if (keyword == "oneof") {
-                    assert(0 && "not implemented");
+                    assert(tokens.size() > 1);
+                    bool allint = true;
+                    std::vector<int> ivec;
+                    for (size_t i = 1; i < tokens.size(); ++i) {
+                        if (!helpers::is_int(tokens[i])) {
+                            allint = false;
+                            break;
+                        } else {
+                            ivec.push_back(helpers::str2value<int>(tokens[i]));
+                        }
+                    }
+                    if (allint) {
+                        auto c = std::make_shared<oneof_value_comparator<int>>();
+                        c->base = ivec;
+                        retvalue = c;
+                    } else {
+                        auto c = std::make_shared<oneof_value_comparator<std::string>>();
+                        c->base.resize(tokens.size() - 1);
+                        for (size_t i = 1; i < tokens.size(); ++i) {
+                            c->base[i - 1] = tokens[i];
+                        }
+                        retvalue = c;
+                    }
                 }
                 if (keyword == "auxvalue") {
-                    assert(0 && "not implemented");
+                    assert(tokens.size() == 4);
+                    auto c = std::make_shared<auxvalue_collector>();
+                    c->type = tokens[1];
+                    c->averaging = tokens[2];
+                    c->name = tokens[3];
+                    retvalue = c;
                 }
                 retvalue->parameter_code = parameter_code;
                 retvalue->dir = indir;

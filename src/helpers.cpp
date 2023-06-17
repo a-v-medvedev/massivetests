@@ -40,6 +40,11 @@ double str2value<double>(const std::string &value) {
 }
 
 template <>
+bool str2value<bool>(const std::string &value) {
+    return value == "true";
+}
+
+template <>
 std::string value2str<double>(const double &x) { return helpers::flt2str(x); }
 
 template <>

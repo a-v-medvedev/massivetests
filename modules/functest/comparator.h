@@ -65,4 +65,23 @@ struct absolute_nonnumeric_value_comparator : public basic_value_comparator<val_
     virtual status_t compare(std::string &comment) const override;
 };
 
+template <typename val_t>
+struct oneof_value_comparator : public basic_value_comparator<val_t> {
+    std::vector<val_t> base;    
+    using basic_value_comparator<val_t>::parameter_code;
+    using basic_value_comparator<val_t>::dir;
+    using basic_value_comparator<val_t>::result;
+    virtual status_t compare(std::string &comment) const override;
+};
+
+struct auxvalue_collector : public comparator_t {
+    std::string type;
+    std::string averaging;
+    std::string name;
+    virtual bool acquire_result_data_piece(const YAML::Node &stream, const std::string &section, const std::string &parameter);
+    virtual status_t check_attempts_equality(std::vector<std::shared_ptr<comparator_t>> &v, std::string &comment);
+    virtual status_t compare(std::string &comment) const override;
+    virtual bool operator<(const comparator_t &other) const;
+};
+
 }
