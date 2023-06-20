@@ -29,25 +29,28 @@ MASSIVE_TESTS_WORKLOADS="$WORKLOADS"
 MASSIVE_TESTS_CONFS="$CONFS"
 MASSIVE_TESTS_SECTIONS="$SECTIONS"
 MASSIVE_TESTS_PARAMETERS="$PARAMETERS"
-MASSIVE_TESTS_SIZEKEYWORD=${MASSIVE_TESTS_SIZEKEYWORD:-"Workpart"}
+MASSIVE_TESTS_WPRTKEYWORD=${MASSIVE_TESTS_WPRTKEYWORD:-"Workpart"}
 MASSIVE_TESTS_KEYWORDS=${MASSIVE_TESTS_KEYWORDS:-"Workload:Conf:X:X"}
 TUPLE=$(comb4 "$WORKLOADS" "$CONFS" "$SECTIONS" "$PARAMETERS")
 rm -f references.txt
 rm -rf summary
+rm -rf run
 mkdir summary
+mkdir run
 for mode in $MODES; do
     for submode in $SUBMODES; do
         CONF=conf.${mode}_${submode}
+        DIR=run/conf.${mode}_${submode}
         export MASSIVE_TESTS_TESTITEM_MODE=$mode
         export MASSIVE_TESTS_TESTITEM_SUBMODE=$submode
         if is_bash_func_declared set_specific_params; then 
             set_specific_params "$mode" "$submode"
         fi
         massivetest-run
-        move_results "$CONF"
-        ./extract.sh "$CONF" "$TUPLE" "$MASSIVE_TESTS_KEYWORDS" "$MASSIVE_TESTS_SIZEKEYWORD" > "out.$CONF" && true
+        move_results "$DIR"
+        ./extract.sh "$DIR" "$TUPLE" "$MASSIVE_TESTS_KEYWORDS" "$MASSIVE_TESTS_WPRTKEYWORD" > "run/out.$CONF" && true
         if [ "$?" != "0" ]; then
-            tail -n1 "out.$CONF"
+            tail -n1 "run/out.$CONF"
             fatal "./extract.sh failed."
         fi
     done

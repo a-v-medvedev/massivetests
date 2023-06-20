@@ -78,20 +78,20 @@ WORKLOADS="$1"
 for wld in $WORKLOADS; do
     made_first_column=""
     n=1
-    for src in sum.*/out.summary.$wld; do  
+    for src in run/sum.*/out.summary.$wld; do  
         if [ -z "$made_first_column" ]; then
-            cat $src | awk 'NF==4 && $1!="#" { printf "%-8s%-24s:\n", $1, $2 }' | sort -k1,1n -k2,2n | uniq > table.$wld.0
-            echo -e "# nnodes workpart               :" >> table.$wld.0
+            cat $src | awk 'NF==4 && $1!="#" { printf "%-8s%-24s:\n", $1, $2 }' | sort -k1,1n -k2,2n | uniq > run/table.$wld.0
+            echo -e "# nnodes workpart               :" >> run/table.$wld.0
             made_first_column="yes"
         fi
         submodes=$(grep '^#' $src | sed 's/# //')
         nsubmodes=$(echo $submodes | wc -w)
-        sm=$(echo -e "$src (${submodes})" | sed 's/^sum\.conf.//;s!/out.summary[^ ]*!!')
-        parse_summary "$src" "table.$wld.$n" "$sm" "$nsubmodes"
+        sm=$(echo -e "$src (${submodes})" | sed 's!^run/sum\.conf.!!;s!/out.summary[^ ]*!!')
+        parse_summary "$src" "run/table.$wld.$n" "$sm" "$nsubmodes"
         n=$(expr $n \+ 1)
     done
-    paste -d ' ' table.$wld.* > table.$wld
-    rm table.$wld.*
+    paste -d ' ' run/table.$wld.* > run/table.$wld
+    rm run/table.$wld.*
 done
 cat .stats.txt | awk '{ for (i=1; i<=NF; i++) SUM[i]+=$i; N=NF; } END { print "S=" SUM[1] " P=" SUM[2] " F=" SUM[3] " N=" SUM[4] " TACE=" SUM[5]; }' > stats.txt
 rm .stats.txt

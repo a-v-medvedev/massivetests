@@ -254,6 +254,16 @@ static inline void yaml_out_seq(YAML::Emitter &out, const std::string &key, cons
     }
 }
 
+template <class CONTAINER>
+void yaml_out_map(YAML::Emitter &out, const std::string &key, const CONTAINER &vals) {
+    out << YAML::Key << key.c_str() << YAML::Value << YAML::Flow;
+    out << YAML::Flow << YAML::BeginMap;
+    for (auto &v : vals) {
+        out << YAML::Key << v.first << YAML::Value << v.second << YAML::Flow;
+    }
+    out << YAML::EndMap;
+}
+
 #define YAML_OUT_SEQ(KEY, VALS, FUNCBODY)                                                          \
     {                                                                                              \
         using CONTAINER = decltype(VALS);                                                          \
@@ -268,6 +278,12 @@ static inline void yaml_out_seq(YAML::Emitter &out, const std::string &key, cons
         using ELEM_TYPE = typename CONTAINER::value_type;                                                   \
         const auto &fn = [](ELEM_TYPE v) FUNCBODY;                                                 \
         helpers::yaml_out_seq<CONTAINER, ELEM_TYPE>(out, KEY, VALS, fn, 2);                        \
+    }
+
+#define YAML_OUT_MAP(KEY, VALS) \
+    { \
+        using CONTAINER = decltype(VALS); \
+        helpers::yaml_out_map<CONTAINER>(out, KEY, VALS); \
     }
 
 } // namespace helpers

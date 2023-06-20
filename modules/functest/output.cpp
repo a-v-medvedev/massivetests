@@ -215,6 +215,7 @@ void output_maker<parallel_conf_t>::make(std::vector<std::shared_ptr<process<par
         status = status_t::N;
     }
 
+    std::map<std::string, std::string> auxilary;
     // For each section/parameter pair -- run a comparator
     if (status == status_t::P) {
         for (auto &it : values) {
@@ -232,17 +233,17 @@ void output_maker<parallel_conf_t>::make(std::vector<std::shared_ptr<process<par
                 status = status_t::N;
                 break;
             }
-            status = v[0]->check_attempts_equality(v, comment);
+            status = v[0]->handle_attempts(v, comment);
             if (status != status_t::P)
                 break;
-            status = v[0]->compare(comment);
+            status = v[0]->compare(comment, auxilary);
             if (status != status_t::P)
                 break;
         }
     }
 
     // Make a result record for this testitem
-    auto r = functest::traits::make_result(wconf, pconf, {"", ""}, workpart, status_to_string(status), comment);
+    auto r = functest::traits::make_result(wconf, pconf, {"", ""}, workpart, status_to_string(status), comment, auxilary);
     r->to_yaml(out);
     std::cout << "OUTPUT: functest: {" << wconf.first << "," << wconf.second << "}"
               << " on parallel conf: {" << pconf.first << "," << pconf.second << "} " << std::endl;

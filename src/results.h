@@ -47,12 +47,14 @@ struct result : public result_t {
     value_t value;
     std::string comment = "";
     std::string index;
+    std::map<std::string, std::string> auxilary;
     result() {}
     result(workload_conf_t _workload_conf, parallel_conf_t _parallel_conf, 
            target_parameter_t _target_parameter,
-           workpart_t _workpart, value_t _value, const std::string &_comment = "")
+           workpart_t _workpart, value_t _value, const std::string &_comment, 
+           const std::map<std::string, std::string> &_auxilary)
         : workload_conf(_workload_conf), parallel_conf(_parallel_conf), target_parameter(_target_parameter),
-          workpart(_workpart), value(_value), comment(_comment) {
+          workpart(_workpart), value(_value), comment(_comment), auxilary(_auxilary) {
         make_index();
     }
 
@@ -74,6 +76,9 @@ struct result : public result_t {
         TRAITS::workpart_to_yaml(workpart, out);
         YAML_OUT("Value", value);
         YAML_OUT("Comment", comment);
+        if (auxilary.size() != 0) {
+            YAML_OUT_MAP("Auxvalues", auxilary);
+        }
         out << YAML::EndMap;
     }
     virtual std::string get_index() { return index; }

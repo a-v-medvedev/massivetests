@@ -293,11 +293,20 @@ struct test_item_t {
                 }
                 if (keyword == "auxvalue") {
                     assert(tokens.size() == 4);
-                    auto c = std::make_shared<auxvalue_collector>();
-                    c->type = tokens[1];
-                    c->averaging = tokens[2];
-                    c->name = tokens[3];
-                    retvalue = c;
+                    auto type = tokens[1];
+                    if (type == "float") {
+                        auto c = std::make_shared<auxvalue_collector<double>>();
+                        c->averaging = tokens[2];
+                        c->name = tokens[3];
+                        retvalue = c;
+                    } else if (type == "int") {
+                        auto c = std::make_shared<auxvalue_collector<int>>();
+                        c->averaging = tokens[2];
+                        c->name = tokens[3];
+                        retvalue = c;
+                    } else {
+                        assert(0 && "not supported type");
+                    }
                 }
                 retvalue->parameter_code = parameter_code;
                 retvalue->dir = indir;

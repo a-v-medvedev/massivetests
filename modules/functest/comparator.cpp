@@ -71,7 +71,7 @@ bool basic_value_comparator<val_t>::acquire_result_data_piece(const YAML::Node &
 }
 
 template <typename val_t>    
-status_t basic_value_comparator<val_t>::check_attempts_equality(std::vector<std::shared_ptr<comparator_t>> &v, std::string &comment) {
+status_t basic_value_comparator<val_t>::handle_attempts(std::vector<std::shared_ptr<comparator_t>> &v, std::string &comment) {
     if (v.size() == 1) {
         return status_t::P;
     }
@@ -99,7 +99,8 @@ bool basic_value_comparator<val_t>::operator<(const comparator_t &other_) const 
 }
 
 template <typename val_t>
-status_t absolute_numeric_value_comparator<val_t>::compare(std::string &comment) const {
+status_t absolute_numeric_value_comparator<val_t>::compare(std::string &comment, std::map<std::string, std::string> &auxilary) const {
+    (void)auxilary;
     double diff = fabs(result - base); 
     if (diff > tolerance) {
         if (functest::traits::debug) {
@@ -117,7 +118,8 @@ status_t absolute_numeric_value_comparator<val_t>::compare(std::string &comment)
 }
 
 template <typename val_t>
-status_t absolute_nonnumeric_value_comparator<val_t>::compare(std::string &comment) const {
+status_t absolute_nonnumeric_value_comparator<val_t>::compare(std::string &comment, std::map<std::string, std::string> &auxilary) const {
+    (void)auxilary;
     if (result != base) {
         if (functest::traits::debug) {
             std::cout << ">> functest: result!=base" << ". GOLD VALUE COMPARISON FAILED!" << std::endl;
@@ -137,7 +139,8 @@ template class absolute_nonnumeric_value_comparator<bool>;
 template class absolute_nonnumeric_value_comparator<std::string>;
 
 template <typename val_t>
-status_t relative_numeric_value_comparator<val_t>::compare(std::string &comment) const {
+status_t relative_numeric_value_comparator<val_t>::compare(std::string &comment, std::map<std::string, std::string> &auxilary) const {
+    (void)auxilary;
     double diff = fabs((result - base) / base); 
     if (diff > tolerance) {
         if (functest::traits::debug) {
@@ -157,34 +160,51 @@ status_t relative_numeric_value_comparator<val_t>::compare(std::string &comment)
 template class relative_numeric_value_comparator<double>;
 
 template <typename val_t>
-status_t oneof_value_comparator<val_t>::compare(std::string &comment) const {
-    // for el in base
-    //   if el == result
-    //      found = true; break;
-    return status_t::P;
+status_t oneof_value_comparator<val_t>::compare(std::string &comment, std::map<std::string, std::string> &auxilary) const {
+    (void)auxilary;
+    bool found = false;
+    for (auto el : base) {
+        if (el == result) {
+            found = true;
+            break;
+        }
+    }
+    if (!found) {
+        comment = std::string("Value is not one of requred for section/parameter=") + parameter_code + 
+                  std::string(" acquired=") + helpers::value2str(result) + 
+                  std::string(" dir=") + dir;
+
+    }
+    return found ? status_t::P : status_t::F;
 }
 
 template class oneof_value_comparator<int>;
 template class oneof_value_comparator<std::string>;
 
-bool auxvalue_collector::acquire_result_data_piece(const YAML::Node &stream, const std::string &section, const std::string &parameter) {
-    // FIXME the same as in base???
-    return true;
-}
-
-bool auxvalue_collector::operator<(const comparator_t &other_) const {
-    // FIXME the same as in base???
-    return true;
-}
-
-status_t auxvalue_collector::check_attempts_equality(std::vector<std::shared_ptr<comparator_t>> &v, std::string &comment) {
-    // average over attemts and save the averaged result
+template <typename val_t>
+status_t auxvalue_collector<val_t>::handle_attempts(std::vector<std::shared_ptr<comparator_t>> &v, std::string &comment) {
+    (void)comment;
+    if (averaging == "median") {
+        if (v.size() < 3) {
+            return status_t::P;
+        }
+        std::sort(v.begin(), v.end());
+        auto &median = *(reinterpret_cast<auxvalue_collector<val_t> *>(v[v.size() / 2].get()));
+        result = median.result;
+    } else {
+        assert(0 && "not implemented");
+    }
     return status_t::P;
 }
 
-status_t auxvalue_collector::compare(std::string &comment) const {
-    // put averaged result to aux vallues collection
+template <typename val_t>
+status_t auxvalue_collector<val_t>::compare(std::string &comment, std::map<std::string, std::string> &auxilary) const {
+    (void)comment;
+    auxilary[name] = helpers::value2str(result);
     return status_t::P;
 }
+
+template class auxvalue_collector<int>;
+template class auxvalue_collector<double>;
 
 }

@@ -21,8 +21,8 @@ struct comparator_t {
     std::string parameter_code;
     std::string dir;
     virtual bool acquire_result_data_piece(const YAML::Node &stream, const std::string &section, const std::string &parameter) = 0;
-    virtual status_t check_attempts_equality(std::vector<std::shared_ptr<comparator_t>> &v, std::string &comment) = 0;
-    virtual status_t compare(std::string &comment) const = 0;
+    virtual status_t handle_attempts(std::vector<std::shared_ptr<comparator_t>> &v, std::string &comment) = 0;
+    virtual status_t compare(std::string &comment, std::map<std::string, std::string> &auxilary) const = 0;
     virtual bool operator<(const comparator_t &other) const = 0;
 };
 
@@ -31,8 +31,8 @@ struct basic_value_comparator : public comparator_t {
     val_t result;
     val_t base;
     virtual bool acquire_result_data_piece(const YAML::Node &stream, const std::string &section, const std::string &parameter);
-    virtual status_t check_attempts_equality(std::vector<std::shared_ptr<comparator_t>> &v, std::string &comment);
-    virtual status_t compare(std::string &comment) const override { (void)comment; return status_t::N; }
+    virtual status_t handle_attempts(std::vector<std::shared_ptr<comparator_t>> &v, std::string &comment);
+    virtual status_t compare(std::string &comment, std::map<std::string, std::string> &auxilary) const override { (void)comment; (void)auxilary; return status_t::N; }
     virtual bool operator<(const comparator_t &other) const;
 };
 
@@ -43,7 +43,7 @@ struct absolute_numeric_value_comparator : public basic_value_comparator<val_t> 
     using basic_value_comparator<val_t>::result;
     using basic_value_comparator<val_t>::base;
     val_t tolerance;
-    virtual status_t compare(std::string &comment) const override;
+    virtual status_t compare(std::string &comment, std::map<std::string, std::string> &auxilary) const override;
 };
 
 template <typename val_t>
@@ -53,7 +53,7 @@ struct relative_numeric_value_comparator : public basic_value_comparator<val_t> 
     using basic_value_comparator<val_t>::result;
     using basic_value_comparator<val_t>::base;
     val_t tolerance;
-    virtual status_t compare(std::string &comment) const override;
+    virtual status_t compare(std::string &comment, std::map<std::string, std::string> &auxilary) const override;
 };
 
 template <typename val_t>
@@ -62,7 +62,7 @@ struct absolute_nonnumeric_value_comparator : public basic_value_comparator<val_
     using basic_value_comparator<val_t>::dir;
     using basic_value_comparator<val_t>::result;
     using basic_value_comparator<val_t>::base;
-    virtual status_t compare(std::string &comment) const override;
+    virtual status_t compare(std::string &comment, std::map<std::string, std::string> &auxilary) const override;
 };
 
 template <typename val_t>
@@ -71,17 +71,16 @@ struct oneof_value_comparator : public basic_value_comparator<val_t> {
     using basic_value_comparator<val_t>::parameter_code;
     using basic_value_comparator<val_t>::dir;
     using basic_value_comparator<val_t>::result;
-    virtual status_t compare(std::string &comment) const override;
+    virtual status_t compare(std::string &comment, std::map<std::string, std::string> &auxilary) const override;
 };
 
-struct auxvalue_collector : public comparator_t {
-    std::string type;
+template <typename val_t>
+struct auxvalue_collector : public basic_value_comparator<val_t> {
     std::string averaging;
     std::string name;
-    virtual bool acquire_result_data_piece(const YAML::Node &stream, const std::string &section, const std::string &parameter);
-    virtual status_t check_attempts_equality(std::vector<std::shared_ptr<comparator_t>> &v, std::string &comment);
-    virtual status_t compare(std::string &comment) const override;
-    virtual bool operator<(const comparator_t &other) const;
+    using basic_value_comparator<val_t>::result;
+    virtual status_t handle_attempts(std::vector<std::shared_ptr<comparator_t>> &v, std::string &comment) override;
+    virtual status_t compare(std::string &comment, std::map<std::string, std::string> &auxilary) const override;
 };
 
 }

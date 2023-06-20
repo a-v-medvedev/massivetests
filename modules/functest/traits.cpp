@@ -96,8 +96,9 @@ std::shared_ptr<result_t> traits::make_result(const workload_conf_t &wc,
                                               const target_parameter_t &tp,
                                               const workpart_t &ws, 
                                               value_t value,
-                                              const std::string &comment) {
-    return std::make_shared<result<traits>>(wc, pc, tp, ws, value, comment);
+                                              const std::string &comment,
+                                              const std::map<std::string, std::string> &auxilary) {
+    return std::make_shared<result<traits>>(wc, pc, tp, ws, value, comment, auxilary);
 }
 
 #ifdef DEBUG

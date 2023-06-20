@@ -71,7 +71,8 @@ struct traits {
 												 const target_parameter_t &tp,
 												 const workpart_t &ws, 
 												 value_t status,
-												 const std::string &comment = "");
+												 const std::string &comment, 
+                                                 const std::map<std::string, std::string> &auxilary);
     static std::string workload_conf_to_string(const workload_conf_t &c) {
         if (c.first == "" && c.second == "")
             return "";

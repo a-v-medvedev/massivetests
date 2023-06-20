@@ -27,10 +27,10 @@ function getline() {
     local file=$1
     local keywords="$2"
     local key_block="$3"
-	local sizekeyword="$4"
+	local wrptkeyword="$4"
     local n="$5"
-    local size="$6"
-    local search="/[ {]n: $n,/ && /[ {]${sizekeyword}: [\"]*${size}[\"]*,/"
+    local wrpt="$6"
+    local search="/[ {]n: $n,/ && /[ {]${wrptkeyword}: [\"]*${wrpt}[\"]*,/"
     for i in 1 2 3 4; do
         keyword=$(elem "$keywords" "$i" :)
         if [ "$keyword" != "X" ]; then
@@ -83,7 +83,7 @@ function get_ref_number() {
 DIR="$1"
 PARAMS="$2"
 KEYWORDS="$3"
-SIZEKEYWORD="$4"
+WPRTKEYWORD="$4"
 
 [ ! -d "$DIR" ] && echo "ERROR: No argument or directory for extraction does not exist (dir=$DIR)" && exit 1
 [ ! -f "$DIR/output.yaml" ] && echo "ERROR: No output.yaml file in the directory for extraction (dir=$DIR))" && exit 1
@@ -93,14 +93,14 @@ for p in $PARAMS; do
     echo "---"
     for n in $MASSIVE_TESTS_NODES; do
         # FIXME add ppn handling
-        for size in $MASSIVE_TESTS_WORKPARTS; do
-            L=$(getline $DIR/output.yaml "$KEYWORDS" "$p" "$SIZEKEYWORD" "$n" "$size")
+        for wprt in $MASSIVE_TESTS_WORKPARTS; do
+            L=$(getline $DIR/output.yaml "$KEYWORDS" "$p" "$WPRTKEYWORD" "$n" "$wprt")
             V=$(get_value "$L") 
             D=$(get_dir "$L")
             [ -z "$D" ] && D=-
             [ "$D" != "-" ] && D=$DIR/$D
-            [ -z "$V" ] && echo "ERROR: No data for {n=${n},size=${size}} in output.yaml file in the directory for extraction ($DIR)" && exit 1
-            echo $n $size $V $(get_ref_number "$D" "$V" "$L")
+            [ -z "$V" ] && echo "ERROR: No data for {n=${n},wprt=${wprt}} in output.yaml file in the directory for extraction ($DIR)" && exit 1
+            echo $n $wprt $V $(get_ref_number "$D" "$V" "$L")
         done
     done
     echo "---"
