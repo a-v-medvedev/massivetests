@@ -397,17 +397,16 @@ struct test_item_t {
             }
         }
     }
+
     using target_parameter_vector_t = std::vector<functest::traits::target_parameter_t>;
-    target_parameter_vector_t
-    update_target_parameters(const target_parameter_vector_t &given) {
-        if (given.size() != 1)
-            return given;
-        const auto &sp = given[0];
-        auto section = sp.first;
-        auto parameter = sp.second;
-        if (section != "ALL" && parameter != "ALL")
-            return given;
-        target_parameter_vector_t result;
+    void update_target_parameters(const functest::traits::target_parameter_t &given, 
+                                  target_parameter_vector_t &result) {
+        auto section = given.first;
+        auto parameter = given.second;
+        if (section != "ALL" && parameter != "ALL") {
+            result.push_back(given);
+            return;
+        }
         for (const auto &i : base) {
             auto v_sp = helpers::str_split(i.first, '/');
             auto v_section = v_sp[0];
@@ -417,6 +416,14 @@ struct test_item_t {
             if (parameter != "ALL" && v_parameter != parameter)
                 continue;
             result.push_back(functest::traits::target_parameter_t { v_section, v_parameter });
+        }
+    }
+
+    target_parameter_vector_t
+    update_target_parameters(const target_parameter_vector_t &given) {
+        target_parameter_vector_t result;
+        for (const auto &sp : given) {
+            update_target_parameters(sp, result);
         }
         return result;
     }
