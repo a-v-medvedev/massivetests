@@ -18,4 +18,4 @@
 #
 
 #rm -rf conf.* out.conf.* sum.conf.*
-rm -rf table.* sum.conf.* summary/ out.conf.* conf.*
+rm -rf run summary references.txt stats.txt test_routine_*.log
