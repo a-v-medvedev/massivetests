@@ -191,3 +191,63 @@ function init_env()  {
     [ -x ./massivetest ] || fatal "massivetest executable is required."
     [ -e ./params.inc ] || fatal "params.inc executable is required."
 }
+
+function get_line_from_output_yaml() {
+    local file=$1
+    local keywords="$2"
+    local key_block="$3"
+    local wrptkeyword="$4"
+    local wrpt="$5"
+    local n="$56"
+    local search="/[ {]n: $n,/ && /[ {]${wrptkeyword}: [\"]*${wrpt}[\"]*,/"
+    for i in 1 2 3 4; do
+        keyword=$(elem "$keywords" "$i" :)
+        if [ "$keyword" != "X" ]; then
+            key=$(elem "$key_block" "$i" :)
+            x="/[ {};]${keyword}: [\"]*${key}[\"]*,/"
+            search="${search} && ${x}"
+        fi
+    done
+    cat "$file" | awk "$search { print }"
+}
+
+function get_value_simple() {
+    local line=$1
+    echo "$line" | awk -F '[ :{},]*' '{ for (v=1; v<=NF; v++) { if (flag==1) {flag=0; print $v} if ($v=="Value") flag=1; } }'
+}
+
+function parse_yaml {
+   local prefix=$2
+   local s='[[:space:]]*' w='[a-zA-Z0-9_]*' fs=$(echo @|tr @ '\034')
+   echo "$1" | sed -ne "s|,$s\]$s\$|]|" \
+        -e ":1;s|^\($s\)\($w\)$s:$s\[$s\(.*\)$s,$s\(.*\)$s\]|\1\2: [\3]\n\1  - \4|;t1" \
+        -e "s|^\($s\)\($w\)$s:$s\[$s\(.*\)$s\]|\1\2:\n\1  - \3|;p" | \
+   sed -ne "s|,$s}$s\$|}|" \
+        -e ":1;s|^\($s\)-$s{$s\(.*\)$s,$s\($w\)$s:$s\(.*\)$s}|\1- {\2}\n\1  \3: \4|;t1" \
+        -e    "s|^\($s\)-$s{$s\(.*\)$s}|\1-\n\1  \2|;p" | \
+   sed -ne "s|^\($s\):|\1|" \
+        -e "s|^\($s\)-$s[\"']\(.*\)[\"']$s\$|\1$fs$fs\2|p" \
+        -e "s|^\($s\)-$s\(.*\)$s\$|\1$fs$fs\2|p" \
+        -e "s|^\($s\)\($w\)$s:$s[\"']\(.*\)[\"']$s\$|\1$fs\2$fs\3|p" \
+        -e "s|^\($s\)\($w\)$s:$s\(.*\)$s\$|\1$fs\2$fs\3|p" | \
+   awk -F$fs '{
+      indent = length($1)/2;
+      vname[indent] = $2;
+      for (i in vname) {if (i > indent) {delete vname[i]; idx[i]=0}}
+      if(length($2)== 0){  vname[indent]= ++idx[indent] };
+      if (length($3) > 0) {
+         vn=""; for (i=0; i<indent; i++) { vn=(vn)(vname[i])("_")}
+         printf("%s%s%s=\"%s\"\n", "'$prefix'",vn, vname[indent], $3);
+      }
+   }'
+}
+
+function get_value_aux() {
+    local line="$1"
+    eval $(parse_yaml "$line" "local")
+    if [ ! -z "$local1_Auxvalues" ]; then
+        local aux=$(echo $line | sed 's/^.*Auxvalues: /- /;s/}$//')
+        eval $(parse_yaml "$aux" "aux")
+    fi
+}
+

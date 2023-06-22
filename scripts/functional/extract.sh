@@ -20,27 +20,14 @@
 source ./massive_tests.inc
 source ./params.inc
 
-check_bash_func_declared get_value
+if is_bash_func_declared get_value; then
+    MASSIVE_TESTS_GET_VALUE=1
+fi
+if is_bash_func_declared get_value_extended; then
+    MASSIVE_TESTS_GET_VALUE_EXTENDED=1
+fi
 
-
-function getline() {
-    local file=$1
-    local keywords="$2"
-    local key_block="$3"
-	local wrptkeyword="$4"
-    local n="$5"
-    local wrpt="$6"
-    local search="/[ {]n: $n,/ && /[ {]${wrptkeyword}: [\"]*${wrpt}[\"]*,/"
-    for i in 1 2 3 4; do
-        keyword=$(elem "$keywords" "$i" :)
-        if [ "$keyword" != "X" ]; then
-            key=$(elem "$key_block" "$i" :)
-            x="/[ {};]${keyword}: [\"]*${key}[\"]*,/"
-            search="${search} && ${x}"
-        fi
-    done
-	cat "$file" | awk "$search { print }"
-}
+[ -z "$MASSIVE_TESTS_GET_VALUE_EXTENDED" -a -z "$MASSIVE_TESTS_GET_VALUE" ] && fatal "either get_value() or get_value_extended must be declared in params.inc"
 
 function get_dir() {
     local line="$1"
@@ -94,8 +81,13 @@ for p in $PARAMS; do
     for n in $MASSIVE_TESTS_NODES; do
         # FIXME add ppn handling
         for wprt in $MASSIVE_TESTS_WORKPARTS; do
-            L=$(getline $DIR/output.yaml "$KEYWORDS" "$p" "$WPRTKEYWORD" "$n" "$wprt")
-            V=$(get_value "$L") 
+            L=$(get_line_from_output_yaml $DIR/output.yaml "$KEYWORDS" "$p" "$WPRTKEYWORD" "$wprt" "$n")
+            if [ "$MASSIVE_TESTS_GET_VALUE_EXTENDED" == "1" ]; then
+                V=$(get_value_extended $DIR/output.yaml "$KEYWORDS" "$p" "$WPRTKEYWORD" "$wprt" "$n")
+            fi
+            if [ "$MASSIVE_TESTS_GET_VALUE" == "1" ]; then
+                V=$(get_value "$L") 
+            fi
             D=$(get_dir "$L")
             [ -z "$D" ] && D=-
             [ "$D" != "-" ] && D=$DIR/$D
