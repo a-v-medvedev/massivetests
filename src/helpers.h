@@ -264,6 +264,23 @@ void yaml_out_map(YAML::Emitter &out, const std::string &key, const CONTAINER &v
     out << YAML::EndMap;
 }
 
+static inline YAML::Node advance_yaml_node(const YAML::Node &stream, const std::string &section) {
+    YAML::Node node = stream;
+    auto sarr = helpers::str_split(section, '/');
+    for (const auto &subsection : sarr) {
+        if (subsection.empty())
+            break;
+        if (!node.IsMap()) {
+            return YAML::Node(YAML::NodeType::Undefined);
+        }
+        if (!node[subsection]) {
+            return YAML::Node(YAML::NodeType::Undefined);
+        }
+        node.reset(node[subsection].as<YAML::Node>());
+    }
+    return node;
+}
+
 #define YAML_OUT_SEQ(KEY, VALS, FUNCBODY)                                                          \
     {                                                                                              \
         using CONTAINER = decltype(VALS);                                                          \

@@ -39,9 +39,8 @@ namespace functest {
 
 template <typename val_t>
 bool basic_value_comparator<val_t>::acquire_result_data_piece(const YAML::Node &stream, 
-                                                              const std::string &section, 
                                                               const std::string &parameter) {
-    const auto &sec = stream[section].as<YAML::Node>();
+    assert(stream.IsMap());
     if (parameter.find("[") != std::string::npos && 
         parameter.find("]") != std::string::npos) {
         auto pv = helpers::str_split(parameter, '[');
@@ -51,9 +50,9 @@ bool basic_value_comparator<val_t>::acquire_result_data_piece(const YAML::Node &
         auto p = pv[0];
         auto idx = idxv[0];
         size_t i = std::stol(idx);
-        if (!sec[p])
+        if (!stream[p])
             return false;
-        const auto &pn = sec[p].as<YAML::Node>();
+        const auto &pn = stream[p].as<YAML::Node>();
         size_t n = 0;
         for (YAML::const_iterator it = pn.begin(); it != pn.end(); ++it) {
             if (i == n++) {
@@ -62,9 +61,9 @@ bool basic_value_comparator<val_t>::acquire_result_data_piece(const YAML::Node &
             }
         }
     } else {
-        if (!sec[parameter])
+        if (!stream[parameter])
             return false;
-        const auto &p = sec[parameter].as<YAML::Node>();
+        const auto &p = stream[parameter].as<YAML::Node>();
         result = p.as<val_t>();
     }
     return true;

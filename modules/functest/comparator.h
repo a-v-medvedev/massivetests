@@ -20,7 +20,7 @@ namespace functest {
 struct comparator_t {
     std::string parameter_code;
     std::string dir;
-    virtual bool acquire_result_data_piece(const YAML::Node &stream, const std::string &section, const std::string &parameter) = 0;
+    virtual bool acquire_result_data_piece(const YAML::Node &stream, const std::string &parameter) = 0;
     virtual status_t handle_attempts(std::vector<std::shared_ptr<comparator_t>> &v, std::string &comment) = 0;
     virtual status_t compare(std::string &comment, std::map<std::string, std::string> &auxilary) const = 0;
     virtual bool operator<(const comparator_t &other) const = 0;
@@ -30,7 +30,7 @@ template <typename val_t>
 struct basic_value_comparator : public comparator_t {
     val_t result;
     val_t base;
-    virtual bool acquire_result_data_piece(const YAML::Node &stream, const std::string &section, const std::string &parameter);
+    virtual bool acquire_result_data_piece(const YAML::Node &stream, const std::string &parameter);
     virtual status_t handle_attempts(std::vector<std::shared_ptr<comparator_t>> &v, std::string &comment);
     virtual status_t compare(std::string &comment, std::map<std::string, std::string> &auxilary) const override { (void)comment; (void)auxilary; return status_t::N; }
     virtual bool operator<(const comparator_t &other) const;

@@ -185,10 +185,11 @@ void output_maker<parallel_conf_t>::make(std::vector<std::shared_ptr<process<par
                 std::string &parameter = sp.second;
                 auto parameter_code = functest::traits::target_parameter_to_string(sp);
                 auto &vals = values[parameter_code];
-                if (!stream[section])
+                YAML::Node node = helpers::advance_yaml_node(stream, section);
+                if (!node)
                     continue;
                 auto comparator = testitem.get_comparator(parameter_code, pconf.first, pconf.second, indir);
-                if (comparator->acquire_result_data_piece(stream, section, parameter))
+                if (comparator->acquire_result_data_piece(node, parameter))
                     vals[workpart].push_back(comparator);
             }
         }

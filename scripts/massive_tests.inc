@@ -198,7 +198,7 @@ function get_line_from_output_yaml() {
     local key_block="$3"
     local wrptkeyword="$4"
     local wrpt="$5"
-    local n="$56"
+    local n="$6"
     local search="/[ {]n: $n,/ && /[ {]${wrptkeyword}: [\"]*${wrpt}[\"]*,/"
     for i in 1 2 3 4; do
         keyword=$(elem "$keywords" "$i" :)

@@ -316,10 +316,21 @@ struct test_item_t {
         return std::shared_ptr<comparator_t>(nullptr);
     }
 
+    std::string get_specialized_name(const std::string &name) {
+        auto s = helpers::str_split(name, '/');
+        if (s.size() < 2) {
+            return std::string("test_items.yaml");
+        }   
+        std::string section;
+        for (size_t i = 0; i < s.size() - 1; i++) {
+            section += std::string("_") + s[i];
+        }
+        return std::string("test_items") + section + std::string(".yaml");
+    }
+
     void load(const std::string &_name) {
         name = _name;
-        auto s = helpers::str_split(name, '/');
-        std::string specialized = std::string("test_items_") + s[0] + std::string(".yaml");
+        std::string specialized = get_specialized_name(name);
         std::string generic = "test_items.yaml";
         std::ifstream in;
         in.open(specialized);
