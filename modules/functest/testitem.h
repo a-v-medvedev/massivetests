@@ -420,8 +420,10 @@ struct test_item_t {
         }
         for (const auto &i : base) {
             auto v_sp = helpers::str_split(i.first, '/');
-            auto v_section = v_sp[0];
-            auto v_parameter = v_sp[1];
+            std::string v_section, v_parameter = v_sp.back();
+            for (size_t i = 0; i < v_sp.size() - 1; i++) {
+                v_section += v_sp[i] + (i == v_sp.size() - 2 ? "" : "/");
+            }
             if (section != "ALL" && v_section != section)
                 continue;
             if (parameter != "ALL" && v_parameter != parameter)
