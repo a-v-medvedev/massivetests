@@ -17,6 +17,7 @@
 #
 #
 
+[ -z "$MASSIVE_TESTS_COLUMN_WIDTH" ] && MASSIVE_TESTS_COLUMN_WIDTH=7
 
 function parse_summary() {
     local summary="$1"
@@ -58,14 +59,14 @@ EOF
               if (item=="P") item="PASSD"
               if (item=="S") item="SKIPD"
               if (item=="N") item="NORES"
-              fld=sprintf("%-7s",item)
+              fld=sprintf("%-${MASSIVE_TESTS_COLUMN_WIDTH}s",item)
               str=str fld
           }
           printf "%-" WIDTH "s :\n", str;
         }
 EOF
     WIDTH=$(expr $(echo $submodes | wc -c))
-    WIDTH2=$(expr "$nsubmodes" \* 7 + 1)
+    WIDTH2=$(expr "$nsubmodes" \* ${MASSIVE_TESTS_COLUMN_WIDTH} + 1)
     [ "$WIDTH2" -gt "$WIDTH" ] && WIDTH=$WIDTH2
     awk -f .parse.awk "$summary" > .table.txt
     cat .table.txt | sort -k1,1n -k2,2n | awk -v WIDTH=$WIDTH -F'[ :%]' -f .format.awk > "$table"
@@ -86,7 +87,8 @@ for wld in $WORKLOADS; do
         fi
         submodes=$(grep '^#' $src | sed 's/# //')
         nsubmodes=$(echo $submodes | wc -w)
-        sm=$(echo -e "$src (${submodes})" | sed 's!^run/sum\.conf.!!;s!/out.summary[^ ]*!!')
+        if [ "${submodes}" == "X" ]; then legend="$src"; else legend="$src (${submodes})"; fi
+        sm=$(echo -e "$legend" | sed 's!^run/sum\.conf.!!;s!/out.summary[^ ]*!!')
         parse_summary "$src" "run/table.$wld.$n" "$sm" "$nsubmodes"
         n=$(expr $n \+ 1)
     done
