@@ -66,7 +66,7 @@ are_there_files "stats.txt" || exit 1 && true
 are_there_files "run/table.*" || exit 1 && true
 
 cp -f stats.txt run/table.* summary/
-are_there_files references.txt && cp -f references.txt summary/
-are_there_files "test_items*yaml" && cp -f test_items*yaml summary/
-are_there_files "input_*.yaml" && cp -f input_*.yaml summary/
+are_there_files references.txt && cp -f references.txt summary/ || true
+are_there_files "test_items*yaml" && cp -f test_items*yaml summary/ || true
+are_there_files "input_*.yaml" && cp -f input_*.yaml summary/ || true
 

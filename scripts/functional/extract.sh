@@ -20,14 +20,9 @@
 source ./massive_tests.inc
 source ./params.inc
 
-if is_bash_func_declared get_value; then
-    MASSIVE_TESTS_GET_VALUE=1
-fi
-if is_bash_func_declared get_value_extended; then
-    MASSIVE_TESTS_GET_VALUE_EXTENDED=1
-fi
-
-[ -z "$MASSIVE_TESTS_GET_VALUE_EXTENDED" -a -z "$MASSIVE_TESTS_GET_VALUE" ] && fatal "either get_value() or get_value_extended must be declared in params.inc"
+is_bash_func_declared get_value && MASSIVE_TESTS_GET_VALUE=1
+is_bash_func_declared get_value_extended && MASSIVE_TESTS_GET_VALUE_EXTENDED=1
+[ -z "$MASSIVE_TESTS_GET_VALUE_EXTENDED" -a -z "$MASSIVE_TESTS_GET_VALUE" ] && MASSIVE_TESTS_GET_VALUE_SIMPLE=1
 
 function get_dir() {
     local line="$1"
@@ -82,12 +77,9 @@ for p in $PARAMS; do
         # FIXME add ppn handling
         for wprt in $MASSIVE_TESTS_WORKPARTS; do
             L=$(get_line_from_output_yaml $DIR/output.yaml "$KEYWORDS" "$p" "$WPRTKEYWORD" "$wprt" "$n")
-            if [ "$MASSIVE_TESTS_GET_VALUE_EXTENDED" == "1" ]; then
-                V=$(get_value_extended $DIR/output.yaml "$KEYWORDS" "$p" "$WPRTKEYWORD" "$wprt" "$n")
-            fi
-            if [ "$MASSIVE_TESTS_GET_VALUE" == "1" ]; then
-                V=$(get_value "$L") 
-            fi
+            [ -z "$MASSIVE_TESTS_GET_VALUE_SIMPLE" ] || V=$(get_value_simple "$L") 
+            [ -z "$MASSIVE_TESTS_GET_VALUE" ] || V=$(get_value "$L") 
+            [ -z "$MASSIVE_TESTS_GET_VALUE_EXTENDED" ] || V=$(get_value_extended $DIR/output.yaml "$KEYWORDS" "$p" "$WPRTKEYWORD" "$wprt" "$n")
             D=$(get_dir "$L")
             [ -z "$D" ] && D=-
             [ "$D" != "-" ] && D=$DIR/$D
