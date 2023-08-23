@@ -194,9 +194,9 @@ void output_maker<parallel_conf_t>::make(std::vector<std::shared_ptr<process<par
             }
         }
         catch (std::runtime_error &ex) {
-            std::cout << "OUTPUT: parse error on YAML file: " << infile << std::endl;
+            std::cout << "OUTPUT: parse error on YAML file: " << infile << ": " << ex.what() << std::endl;
             values.clear();
-            comment = std::string("dir=") + indir + "; parse error on YAML file: " + infile;
+            comment = std::string("dir=") + indir + "; parse error on YAML file: " + infile + ": " + ex.what();
             break;
         }
     }
