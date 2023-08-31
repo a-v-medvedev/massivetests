@@ -188,7 +188,7 @@ void output_maker<parallel_conf_t>::make(std::vector<std::shared_ptr<process<par
                 YAML::Node node = helpers::advance_yaml_node(stream, section);
                 if (!node)
                     continue;
-                auto comparator = testitem.get_comparator(parameter_code, pconf.first, pconf.second, indir);
+                auto comparator = testitem.get_comparator(parameter_code, functest::traits::parallel_conf_to_string(pconf), indir);
                 if (comparator->acquire_result_data_piece(node, parameter))
                     vals[workpart].push_back(comparator);
             }
@@ -247,7 +247,7 @@ void output_maker<parallel_conf_t>::make(std::vector<std::shared_ptr<process<par
     auto r = functest::traits::make_result(wconf, pconf, {"", ""}, workpart, status_to_string(status), comment, auxilary);
     r->to_yaml(out);
     std::cout << "OUTPUT: functest: {" << wconf.first << "," << wconf.second << "}"
-              << " on parallel conf: {" << pconf.first << "," << pconf.second << "} " << std::endl;
+              << " on parallel conf: {" << functest::traits::parallel_conf_to_string(pconf) << "} " << std::endl;
 }
 
 template class output_maker<functest::traits::parallel_conf_t>;

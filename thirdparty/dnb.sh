@@ -80,9 +80,9 @@ fi
 
 ####
 
-PACKAGES="yaml-cpp argsparser mpi-benchmarks psubmit"
-VERSIONS="yaml-cpp:0.6.3 argsparser:HEAD mpi-benchmarks:HEAD psubmit:HEAD"
-TARGET_DIRS=""
+PACKAGES="yaml-cpp argsparser" # mpi-benchmarks psubmit"
+VERSIONS="yaml-cpp:0.6.3 argsparser:HEAD" # mpi-benchmarks:HEAD psubmit:HEAD"
+TARGET_DIRS="yaml-cpp.bin argsparser.bin"
 
 started=$(date "+%s")
 echo "Download and build started at timestamp: $started."

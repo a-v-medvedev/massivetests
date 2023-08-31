@@ -48,7 +48,13 @@ traits::parse_and_make_target_parameters(const args_parser &parser, const std::s
 
 std::vector<traits::parallel_conf_t>
 traits::parse_and_make_parallel_confs(const args_parser &parser, const std::string &name) {
-    return helpers::parsers_vector_to_vector<int, int>(parser, name);
+    std::vector<traits::parallel_conf_t> vpconf;
+    using parse_type = std::tuple<int, int, int>;
+    auto vt = helpers::parsers_vector_to_tuple<parse_type>(parser, name);
+    for (auto &t : vt) {
+        vpconf.push_back({std::get<0>(t), std::get<1>(t), std::get<2>(t)});
+    }
+    return vpconf;
 }
 
 std::vector<traits::workpart_t>

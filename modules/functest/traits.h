@@ -32,8 +32,13 @@ class result_t;
 namespace functest {
 
 struct traits {
+    struct parallel_conf_t {
+        int nnodes;
+        int ppn;
+        int nth;
+        bool operator<(const parallel_conf_t &that) const { return (this->nnodes < that.nnodes ? true : (this->ppn < that.ppn ? true : (this->nth > that.nth ? true : false))); }
+    };
     using workload_conf_t = std::pair<std::string, std::string>;
-    using parallel_conf_t = std::pair<int, int>;
     using target_parameter_t = std::pair<std::string, std::string>;
     using workpart_t = std::pair<std::string, int>;
     using value_t = std::string;
@@ -82,7 +87,10 @@ struct traits {
     }
     static std::string parallel_conf_to_string(const parallel_conf_t &c) {
         std::stringstream ss;
-        ss << c.first << "/" << c.second;
+        std::string nnodes = std::to_string(c.nnodes);
+        std::string ppn = std::to_string(c.ppn);
+        std::string nth = std::to_string(c.nth);
+        ss << nnodes << "/" << ppn << "/" << nth;
         return ss.str();
     }
     static std::string target_parameter_to_string(const target_parameter_t &tp) {
@@ -106,8 +114,16 @@ struct traits {
         out << YAML::Key << YAML::Flow << "Conf" << YAML::Value << c.second;
     }
     static void parallel_conf_to_yaml(const parallel_conf_t &c, YAML::Emitter &out) {
-        out << YAML::Key << YAML::Flow << "n" << YAML::Value << c.first;
-        out << YAML::Key << YAML::Flow << "ppn" << YAML::Value << c.second;
+        std::string pconf = std::to_string(c.nnodes); 
+        if (c.ppn || c.nth) {
+            pconf += ":";
+            pconf += std::to_string(c.ppn);
+        }
+        if (c.nth) {
+            pconf += ":";
+            pconf += std::to_string(c.nth);
+        }
+        out << YAML::Key << YAML::Flow << "pconf" << YAML::Value << pconf;
     }
     static void target_parameter_to_yaml(const target_parameter_t &tp, YAML::Emitter &out) {
         if (tp.first == "" && tp.second == "")
@@ -115,11 +131,11 @@ struct traits {
         out << YAML::Key << YAML::Flow << "Section" << YAML::Value << tp.first;
         out << YAML::Key << YAML::Flow << "Parameter" << YAML::Value << tp.second;
     }
-    static void workpart_to_yaml(const workpart_t &ws, YAML::Emitter &out) {
-        if (ws.first == "")
+    static void workpart_to_yaml(const workpart_t &wp, YAML::Emitter &out) {
+        if (wp.first == "")
             return;
-        out << YAML::Key << YAML::Flow << "Workpart" << YAML::Value << ws.first;
-        out << YAML::Key << YAML::Flow << "Iters" << YAML::Value << ws.second;
+        out << YAML::Key << YAML::Flow << "Workpart" << YAML::Value << wp.first;
+        out << YAML::Key << YAML::Flow << "Workpart_param" << YAML::Value << wp.second;
     }
 };
 

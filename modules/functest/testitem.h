@@ -39,10 +39,10 @@ struct test_item_t {
     std::map<std::string, descr_t> base;
     protected:
 	std::vector<std::pair<std::string, std::string>> prereq;
-    std::map<std::pair<int, int>, bool> skip_variations;
-	std::map<std::pair<int, int>, unsigned> timeout_variations;
-	std::map<std::pair<int, int>, double> tolerance_float_variations;
-	std::map<std::pair<int, int>, unsigned> tolerance_int_variations;
+    std::map<std::string, bool> skip_variations;
+	std::map<std::string, unsigned> timeout_variations;
+	std::map<std::string, double> tolerance_float_variations;
+	std::map<std::string, unsigned> tolerance_int_variations;
     bool skip;
     unsigned timeout;
     double tolerance_float;
@@ -71,28 +71,24 @@ struct test_item_t {
     }
 
     template <typename T>
-    void load_variations(const YAML::Node &dict, T default_value, std::map<std::pair<int, int>, T> &result) {
-        static const std::pair<int, int> zero{0, 0};
+    void load_variations(const YAML::Node &dict, T default_value, std::map<std::string, T> &result) {
+        static const std::string zero("0/0/0");
         result[zero] = default_value;
         for (YAML::const_iterator it = dict.begin(); it != dict.end(); ++it) {
-            const auto& key = it->first.as<std::string>();
+            const auto& pconf = it->first.as<std::string>();
             unsigned value = it->second.as<T>();
-            std::pair<int, int> id;
-            if (!get_int_pair_from_string(key, id))
-                continue;
-            result[id] = value;
+            result[pconf] = value;
         }
     }
 
     template <typename T>
-    T search_variations_by_n_ppn(int n, int ppn, const std::map<std::pair<int, int>, T> &variations, T default_value) const {
-        std::pair<int, int> zero(0, 0);
-        std::pair<int, int> id(n, ppn);
+    T search_variations_by_pconf(const std::string &pconf, const std::map<std::string, T> &variations, T default_value) const {
+        std::string zero = "0/0/0";
         if (variations.find(zero) != variations.end()) {
             default_value = variations.find(zero)->second;
         }
-        if (variations.find(id) != variations.end()) {
-            return variations.find(id)->second;
+        if (variations.find(pconf) != variations.end()) {
+            return variations.find(pconf)->second;
         }
 		return default_value;
     }
@@ -153,29 +149,28 @@ struct test_item_t {
         return postproc;
     }
 
-    unsigned get_skip_flag(int n, int ppn = 1) const {
-        return search_variations_by_n_ppn<bool>(n, ppn, skip_variations, skip);    
+    unsigned get_skip_flag(const std::string &pconf) const {
+        return search_variations_by_pconf<bool>(pconf, skip_variations, skip);    
     }
 
-    unsigned get_tolerance_int(int n, int ppn = 1) const {
-        return search_variations_by_n_ppn<unsigned>(n, ppn, tolerance_int_variations, tolerance_int);    
+    unsigned get_tolerance_int(const std::string &pconf) const {
+        return search_variations_by_pconf<unsigned>(pconf, tolerance_int_variations, tolerance_int);    
     }
 
-    double get_tolerance_float(int n, int ppn = 1) const {
-        return search_variations_by_n_ppn<double>(n, ppn, tolerance_float_variations, tolerance_float);    
+    double get_tolerance_float(const std::string &pconf) const {
+        return search_variations_by_pconf<double>(pconf, tolerance_float_variations, tolerance_float);    
     }
 
     tolerance_float_kind_t get_tolerance_float_kind() const {
         return tolerance_float_kind;
     }
 
-    unsigned get_timeout(int n, int ppn = 1) const {
-        return search_variations_by_n_ppn<unsigned>(n, ppn, timeout_variations, timeout);    
+    unsigned get_timeout(const std::string &pconf) const {
+        return search_variations_by_pconf<unsigned>(pconf, timeout_variations, timeout);    
     }
 
     std::shared_ptr<comparator_t> get_comparator(const std::string &parameter_code, 
-                                                 int n, 
-                                                 int ppn, 
+                                                 const std::string &pconf,
                                                  const std::string &indir) {
         bool is_scalar = std::holds_alternative<double>(base[parameter_code]) ||
                          std::holds_alternative<int>(base[parameter_code]) ||
@@ -186,12 +181,12 @@ struct test_item_t {
                 if (get_tolerance_float_kind() == ABSOLUTE) {
                     auto c = std::make_shared<absolute_numeric_value_comparator<double>>();
                     c->base = std::get<double>(base[parameter_code]);
-                    c->tolerance = get_tolerance_float(n, ppn);
+                    c->tolerance = get_tolerance_float(pconf);
                     retvalue = c;
                 } else if (get_tolerance_float_kind() == RELATIVE) {
                     auto c = std::make_shared<relative_numeric_value_comparator<double>>();
                     c->base = std::get<double>(base[parameter_code]);
-                    c->tolerance = get_tolerance_float(n, ppn);
+                    c->tolerance = get_tolerance_float(pconf);
                     retvalue = c;
                 } else {
                     assert(0 && "not implemented");
@@ -199,7 +194,7 @@ struct test_item_t {
             } else if (std::holds_alternative<int>(base[parameter_code])) {
                 auto c = std::make_shared<absolute_numeric_value_comparator<int>>();
                 c->base = std::get<int>(base[parameter_code]);
-                c->tolerance = get_tolerance_int(n, ppn);
+                c->tolerance = get_tolerance_int(pconf);
                 retvalue = c;
             } else if (std::holds_alternative<bool>(base[parameter_code])) {
                 auto c = std::make_shared<absolute_nonnumeric_value_comparator<bool>>();

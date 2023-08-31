@@ -173,11 +173,11 @@ function move_results() {
 }
 
 function massivetest-run() {
-    local NPPNS=$(zip "$MASSIVE_TESTS_NODES" "$MASSIVE_TESTS_PPNS" ",")
-    local WORKPARTS=$(zip "$MASSIVE_TESTS_WORKPARTS" "$MASSIVE_TESTS_REPEATS" ",")
+    local PCONFS=$(comb "$MASSIVE_TESTS_PCONFS" "X" "," | sed 's/:X//g')
+    local WORKPARTS=$(zip "$MASSIVE_TESTS_WORKPARTS" "$MASSIVE_TESTS_WORKPART_PARAMS" ",")
     local WORKLOADS=$(comb "$MASSIVE_TESTS_WORKLOADS" "$MASSIVE_TESTS_CONFS" ",")
     local PARAMS=$(comb "$MASSIVE_TESTS_SECTIONS" "$MASSIVE_TESTS_PARAMETERS" ",")
-    ./massivetest --driver="$MASSIVE_TESTS_DRIVER" --scale="${NPPNS}" --nqueued="$MASSIVE_TESTS_NQUEUED" --workparts="$WORKPARTS" --repeats="$MASSIVE_TESTS_EXEC_REPEATS" --workloads="$WORKLOADS" --parameters="$PARAMS"
+    ./massivetest --driver="$MASSIVE_TESTS_DRIVER" --scale="${PCONFS}" --nqueued="$MASSIVE_TESTS_NQUEUED" --workparts="$WORKPARTS" --repeats="$MASSIVE_TESTS_EXEC_REPEATS" --workloads="$WORKLOADS" --parameters="$PARAMS"
 }
 
 function init_env()  {
@@ -198,8 +198,8 @@ function get_line_from_output_yaml() {
     local key_block="$3"
     local wrptkeyword="$4"
     local wrpt="$5"
-    local n="$6"
-    local search="/[ {]n: $n,/ && /[ {]${wrptkeyword}: [\"]*${wrpt}[\"]*,/"
+    local pconf="$6"
+    local search="/[ {]pconf: ${pconf},/ && /[ {]${wrptkeyword}: [\"]*${wrpt}[\"]*,/"
     for i in 1 2 3 4; do
         keyword=$(elem "$keywords" "$i" :)
         if [ "$keyword" != "X" ]; then

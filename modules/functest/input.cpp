@@ -58,8 +58,9 @@ void input_maker<parallel_conf_t>::do_substs(const parallel_conf_t &pconf, std::
     helpers::subst(filename, "%CONF%", scope.workload_conf.second);
     helpers::subst(filename, "%WPRT%", scope.workparts[0].first);
     helpers::subst(filename, "%WPRT_PARAM%", std::to_string(scope.workparts[0].second));
-    helpers::subst(filename, "%NP%", std::to_string(pconf.first));
-    helpers::subst(filename, "%PPN%", std::to_string(pconf.second));
+    helpers::subst(filename, "%NNODES%", std::to_string(pconf.nnodes));
+    helpers::subst(filename, "%PPN%", std::to_string(pconf.ppn));
+    helpers::subst(filename, "%NTH%", std::to_string(pconf.nth));
 }
 
 template <typename parallel_conf_t>
@@ -85,7 +86,7 @@ bool input_maker<parallel_conf_t>::exec_shell_command(const parallel_conf_t &pco
     for (const auto &v : exports) {
         command += v + " ";
     }
-	auto timeout = testitem.get_timeout(pconf.first, pconf.second);
+	auto timeout = testitem.get_timeout(functest::traits::parallel_conf_to_string(pconf));
 	command += std::string("TIMEOUT=") + std::to_string(timeout) + " ";
 #if 0 // This code is specific for basic comparators, cannot handle complex ones this way    
     for (const auto &kv : testitem.base) {
@@ -140,7 +141,7 @@ bool input_maker<parallel_conf_t>::make(const parallel_conf_t &pconf, execution_
 	const auto &conf = scope.workload_conf.second;
 
     // If the skip flag is set, just return
-    if (testitem.get_skip_flag(pconf.first, pconf.second) || env.skip) {
+    if (testitem.get_skip_flag(functest::traits::parallel_conf_to_string(pconf)) || env.skip) {
         env.skip = true;
         return false;
     }
@@ -192,9 +193,9 @@ bool input_maker<parallel_conf_t>::make(const parallel_conf_t &pconf, execution_
         if (conf_key != "") {
             env.cmdline_args += std::string(" ") + conf_key + std::string(" ") + conf;
         }
-        if (timeout_key != "" && testitem.get_timeout(pconf.first, pconf.second)) {
+        if (timeout_key != "" && testitem.get_timeout(functest::traits::parallel_conf_to_string(pconf))) {
             env.cmdline_args += std::string(" ") + timeout_key + std::string(" ") + 
-                                std::to_string(testitem.get_timeout(pconf.first, pconf.second));
+                                std::to_string(testitem.get_timeout(functest::traits::parallel_conf_to_string(pconf)));
         }
         char *aux_opts;
         if ((aux_opts = getenv("MASSIVETEST_AUX_ARGS"))) {

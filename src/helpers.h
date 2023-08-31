@@ -172,6 +172,7 @@ static inline bool contains(const std::string &str, char ch) {
     return str.find(ch) != std::string::npos;
 }
 
+/*
 template <typename KEY, typename VALUE>
 std::vector<std::pair<KEY, VALUE>> parsers_map_to_vector(const args_parser &parser,
                                                          const std::string &arg_name) {
@@ -183,6 +184,39 @@ std::vector<std::pair<KEY, VALUE>> parsers_map_to_vector(const args_parser &pars
         result.push_back(element_t(str2value<KEY>(elem.first), str2value<VALUE>(elem.second)));
     }
     std::sort(result.begin(), result.end(), [](const element_t &val1, const element_t &val2){ return val1.first < val2.first; });
+    return result;
+}
+*/
+
+template <typename TUPLE>
+std::vector<TUPLE> parsers_vector_to_tuple(const args_parser &parser, const std::string &arg_name) {
+    constexpr auto ts = std::tuple_size<TUPLE>{};
+    std::vector<TUPLE> result;
+    std::vector<std::string> result_as_str;
+    parser.get(arg_name, result_as_str);
+    for (const auto &elem : result_as_str) {
+        auto A = str_split(elem, ':');
+        if (A.size() > ts) {
+            throw std::runtime_error("parsers_vector_to_tuple: more data than the tuple size!");
+        }
+        TUPLE t;
+        for (size_t i = 0; i < std::tuple_size<TUPLE>{}; i++) {
+            switch (i) {
+                case 0: if constexpr (0 < ts) { using elem_t = typename std::tuple_element<0, TUPLE>::type; std::get<0>(t) = str2value<elem_t>(A[i]); break; }
+                case 1: if constexpr (1 < ts) { using elem_t = typename std::tuple_element<1, TUPLE>::type; std::get<1>(t) = str2value<elem_t>(A[i]); break; }
+                case 2: if constexpr (2 < ts) { using elem_t = typename std::tuple_element<2, TUPLE>::type; std::get<2>(t) = str2value<elem_t>(A[i]); break; }
+                case 3: if constexpr (3 < ts) { using elem_t = typename std::tuple_element<3, TUPLE>::type; std::get<3>(t) = str2value<elem_t>(A[i]); break; }
+                case 4: if constexpr (4 < ts) { using elem_t = typename std::tuple_element<4, TUPLE>::type; std::get<4>(t) = str2value<elem_t>(A[i]); break; }
+                case 5: if constexpr (5 < ts) { using elem_t = typename std::tuple_element<5, TUPLE>::type; std::get<5>(t) = str2value<elem_t>(A[i]); break; }
+                case 6: if constexpr (6 < ts) { using elem_t = typename std::tuple_element<6, TUPLE>::type; std::get<6>(t) = str2value<elem_t>(A[i]); break; }
+                case 7: if constexpr (7 < ts) { using elem_t = typename std::tuple_element<7, TUPLE>::type; std::get<7>(t) = str2value<elem_t>(A[i]); break; }
+                case 8: if constexpr (8 < ts) { using elem_t = typename std::tuple_element<8, TUPLE>::type; std::get<8>(t) = str2value<elem_t>(A[i]); break; }
+                case 9: if constexpr (9 < ts) { using elem_t = typename std::tuple_element<9, TUPLE>::type; std::get<9>(t) = str2value<elem_t>(A[i]); break; }
+                default: throw std::runtime_error("parsers_vector_to_tuple: can't handle this tuple.");
+            }
+        }
+        result.push_back(t);
+    }
     return result;
 }
 

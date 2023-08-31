@@ -69,7 +69,7 @@ void parse_and_start(const args_parser &parser, int nqueued, int repeats) {
     auto workparts = traits.parse_and_make_workparts(parser, "workparts");
     helpers::trunc_file("output_initial.yaml");
     start<TRAITS>(traits.make_scopes(workload_confs, parallel_confs, target_parameters, 
-                   workparts),
+                  workparts),
                   "output_initial.yaml", nqueued, repeats);
 }
 
@@ -88,16 +88,10 @@ int main(int argc, char **argv) {
     parser.add<int>("nqueued", 5);
     parser.add<int>("repeats", 10);
     std::string a = MODULESTR;
-    parser.add<std::string>("driver", a);
     if (!parser.parse())
         return 1;
     int nqueued = parser.get<int>("nqueued");
     int repeats = parser.get<int>("repeats");
-    auto driver = parser.get<std::string>("driver");
-    if (driver != MODULESTR) {
-        std::cout << "Unknown driver: " << driver << std::endl;
-        return 1;
-    }
     parse_and_start<MODULE::traits>(parser, nqueued, repeats);
     return 0;
 }

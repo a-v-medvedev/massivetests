@@ -50,9 +50,7 @@ struct execution_environment {
     void exec(const parallel_conf_t &pconf) const {
         std::cout << "execlp: " << executable << " " << executable << " "
                   << "-n"
-                  << " " << std::to_string(pconf.first) << " "
-                  << "-p"
-                  << " " << std::to_string(pconf.second) << " "
+                  << " " << std::to_string(pconf.nnodes) << " "
                   << "-o"
                   << " " << psubmit_options << " "
                   << "-a"
@@ -60,8 +58,16 @@ struct execution_environment {
                   << "-b"
                   << " " << preproc << " "
                   << "-f"
-                  << " " << postproc << " "
-                  << std::endl;
+                  << " " << postproc << " ";
+        if (pconf.ppn) {
+            std::cout  << "-p"
+                       << " " << std::to_string(pconf.ppn) << " ";
+        }
+        if (pconf.nth) {
+            std::cout  << "-t"
+                       << " " << std::to_string(pconf.nth) << " ";
+        }
+        std::cout << std::endl;
 
         for (const auto &v : exports) {
             auto kv = helpers::str_split(v, '=');
@@ -71,14 +77,34 @@ struct execution_environment {
 		if (full_executable.empty()) {
 			throw std::runtime_error(std::string("exec: can't find file or it has no execution permissions: " + executable));
 		}
+        char *argv[18];
+        argv[0] = strdup(executable.c_str());
+        argv[1] = strdup("-n"); argv[2] = strdup(std::to_string(pconf.nnodes).c_str());
+        argv[3] = strdup("-o"); argv[4] = strdup(psubmit_options.c_str());
+        argv[5] = strdup("-a"); argv[6] = strdup(cmdline_args.c_str());
+        argv[7] = strdup("-b"); argv[8] = strdup(preproc.c_str());
+        argv[9] = strdup("-f"); argv[10]= strdup(postproc.c_str());
+        size_t n = 11;
+        if (pconf.ppn) {
+            argv[n++] = strdup("-p");
+            argv[n++] = strdup(std::to_string(pconf.ppn).c_str());
+        }
+        if (pconf.nth) {
+            argv[n++] = strdup("-t");
+            argv[n++] = strdup(std::to_string(pconf.nth).c_str());
+        }
+        argv[n] = nullptr;
+        execvp(full_executable.c_str(), argv);
+/*
         execlp(full_executable.c_str(), executable.c_str(), 
-                "-n", std::to_string(pconf.first).c_str(), 
-                "-p", std::to_string(pconf.second).c_str(), 
+                "-n", std::to_string(pconf.nnodes).c_str(), 
+                "-p", std::to_string(pconf.ppn).c_str(), 
                 "-o", psubmit_options.c_str(), 
                 "-a", cmdline_args.c_str(),
                 "-b", preproc.c_str(),
                 "-f", postproc.c_str(),
                 (char *)nullptr);
+*/
     }
     std::string to_string() {
         std::stringstream ss;

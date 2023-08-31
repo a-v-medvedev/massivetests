@@ -54,7 +54,7 @@ for mode in $MODES; do
             fatal "./extract.sh failed."
         fi
     done
-    NN=$(nelems "$MASSIVE_TESTS_NODES")
+    NN=$(nelems "$MASSIVE_TESTS_PCONFS")
     NS=$(nelems "$MASSIVE_TESTS_WORKPARTS")
     STEP=$(expr "$NN" \* "$NS" \+ 3)
     ./script-postproc.sh conf.$mode "$STEP" "$TUPLE" || exit 1 && true
