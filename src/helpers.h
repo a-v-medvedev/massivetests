@@ -200,7 +200,7 @@ std::vector<TUPLE> parsers_vector_to_tuple(const args_parser &parser, const std:
             throw std::runtime_error("parsers_vector_to_tuple: more data than the tuple size!");
         }
         TUPLE t;
-        for (size_t i = 0; i < std::tuple_size<TUPLE>{}; i++) {
+        for (size_t i = 0; i < A.size(); i++) {
             switch (i) {
                 case 0: if constexpr (0 < ts) { using elem_t = typename std::tuple_element<0, TUPLE>::type; std::get<0>(t) = str2value<elem_t>(A[i]); break; }
                 case 1: if constexpr (1 < ts) { using elem_t = typename std::tuple_element<1, TUPLE>::type; std::get<1>(t) = str2value<elem_t>(A[i]); break; }
