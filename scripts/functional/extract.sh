@@ -74,6 +74,7 @@ for p in $PARAMS; do
     echo $p ":"
     echo "---"
     for n in $MASSIVE_TESTS_PCONFS; do
+        n=$(echo $n | tr ':' '|')
         for wprt in $MASSIVE_TESTS_WORKPARTS; do
             L=$(get_line_from_output_yaml $DIR/output.yaml "$KEYWORDS" "$p" "$WPRTKEYWORD" "$wprt" "$n")
             [ -z "$MASSIVE_TESTS_GET_VALUE_SIMPLE" ] || V=$(get_value_simple "$L") 
