@@ -82,7 +82,7 @@ for wld in $WORKLOADS; do
     for src in run/sum.*/out.summary.$wld; do  
         if [ -z "$made_first_column" ]; then
             cat $src | awk 'NF==4 && $1!="#" { printf "%-8s%-24s:\n", $1, $2 }' | sort -k1,1n -k2,2n | uniq > run/table.$wld.0
-            echo -e "# nnodes workpart               :" >> run/table.$wld.0
+            echo -e "# pconf workpart               :" >> run/table.$wld.0
             made_first_column="yes"
         fi
         submodes=$(grep '^#' $src | sed 's/# //')
