@@ -58,7 +58,7 @@ struct output_maker : public output_maker_base<parallel_conf_t> {
     YAML::Emitter out;
     std::string outfile;
     output_maker(test_scope<traits> &_scope, const std::string &_outfile);
-    ~output_maker();
+    virtual ~output_maker();
     virtual void make(std::vector<std::shared_ptr<process<parallel_conf_t>>> &attempts);
 };
 

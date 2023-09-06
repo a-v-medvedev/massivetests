@@ -36,7 +36,15 @@ struct traits {
         int nnodes;
         int ppn;
         int nth;
-        bool operator<(const parallel_conf_t &that) const { return (this->nnodes < that.nnodes ? true : (this->ppn < that.ppn ? true : (this->nth > that.nth ? true : false))); }
+        bool operator<(const parallel_conf_t &that) const { 
+            if (this->nnodes < that.nnodes) return true;
+            if (this->nnodes > that.nnodes) return false;
+            if (this->ppn < that.ppn) return true;
+            if (this->ppn > that.ppn) return false;
+            if (this->nth < that.nth) return true;
+            if (this->nth > that.nth) return false;
+            return false;
+        }
     };
     using workload_conf_t = std::pair<std::string, std::string>;
     using target_parameter_t = std::pair<std::string, std::string>;
