@@ -162,7 +162,7 @@ bool input_maker<parallel_conf_t>::make(const parallel_conf_t &pconf, execution_
 
     // Create the set of environment variables for scripts that we are going to execute
     auto &exports = env.exports;
-	for (const auto v : {"WLD", "CONF", "WPRT", "WPRT_PARAM", "NP", "PPN"}) {
+	for (const auto v : {"WLD", "CONF", "WPRT", "WPRT_PARAM", "NP", "PPN", "NTH"}) {
 		std::string s = std::string("MASSIVE_TESTS_TESTITEM_") + v + "=" + "%" + v + "%";
 		do_substs(pconf, s);
 		exports.push_back(s);
