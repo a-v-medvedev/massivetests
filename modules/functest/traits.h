@@ -124,11 +124,11 @@ struct traits {
     static void parallel_conf_to_yaml(const parallel_conf_t &c, YAML::Emitter &out) {
         std::string pconf = std::to_string(c.nnodes); 
         if (c.ppn || c.nth) {
-            pconf += "|";
+            pconf += "/";
             pconf += std::to_string(c.ppn);
         }
         if (c.nth) {
-            pconf += "|";
+            pconf += "/";
             pconf += std::to_string(c.nth);
         }
         out << YAML::Key << YAML::Flow << "pconf" << YAML::Value << pconf;
