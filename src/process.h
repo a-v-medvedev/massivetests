@@ -21,6 +21,7 @@
 #include <string>
 #include <memory>
 #include <unistd.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
 #include <string.h>
@@ -95,16 +96,6 @@ struct execution_environment {
         }
         argv[n] = nullptr;
         execvp(full_executable.c_str(), argv);
-/*
-        execlp(full_executable.c_str(), executable.c_str(), 
-                "-n", std::to_string(pconf.nnodes).c_str(), 
-                "-p", std::to_string(pconf.ppn).c_str(), 
-                "-o", psubmit_options.c_str(), 
-                "-a", cmdline_args.c_str(),
-                "-b", preproc.c_str(),
-                "-f", postproc.c_str(),
-                (char *)nullptr);
-*/
     }
     std::string to_string() {
         std::stringstream ss;
@@ -165,7 +156,10 @@ struct process {
             return;
         }
         assert(!env.holdover);
-        pipe(pipe_fd);
+        int ret = pipe(pipe_fd);
+        if (ret != 0) {
+            throw std::runtime_error(std::string("start: pipe error: ") + strerror(errno)); 
+        }
         pid = fork();
         if (pid == 0) { // Child
             close(pipe_fd[0]);

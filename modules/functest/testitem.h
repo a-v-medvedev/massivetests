@@ -50,33 +50,13 @@ struct test_item_t {
     tolerance_float_kind_t tolerance_float_kind;
     std::string preproc, postproc;
 
-    bool get_int_pair_from_string(const std::string &str, std::pair<int, int> &output) {
-        auto s = helpers::str_split(str, '/');
-        if (s.size() != 2)
-            return false;
-        bool success = true;
-        int n, ppn;
-        try {
-            n = std::stoi(s[0]);
-            ppn = std::stoi(s[1]);
-        }
-        catch(...) {
-            success = false;
-        }
-        if (!success)
-            return false;
-        output.first = n;
-        output.second = ppn;
-        return true;
-    }
-
     template <typename T>
     void load_variations(const YAML::Node &dict, T default_value, std::map<std::string, T> &result) {
         static const std::string zero("0/0/0");
         result[zero] = default_value;
         for (YAML::const_iterator it = dict.begin(); it != dict.end(); ++it) {
             const auto& pconf = it->first.as<std::string>();
-            unsigned value = it->second.as<T>();
+            T value = it->second.as<T>();
             result[pconf] = value;
         }
     }
