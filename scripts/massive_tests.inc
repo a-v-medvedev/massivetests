@@ -199,7 +199,7 @@ function get_line_from_output_yaml() {
     local wrptkeyword="$4"
     local wrpt="$5"
     local pconf="$6"
-    pconf=$(echo $pconf | sed 's/|/\\|/g')
+    pconf=$(echo $pconf | sed 's!/!\\/!g')
     local search="/[ {]pconf: ${pconf},/ && /[ {]${wrptkeyword}: [\"]*${wrpt}[\"]*,/"
     for i in 1 2 3 4; do
         keyword=$(elem "$keywords" "$i" :)
