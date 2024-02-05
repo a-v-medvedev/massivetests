@@ -32,11 +32,15 @@ MASSIVE_TESTS_PARAMETERS="$PARAMETERS"
 MASSIVE_TESTS_WPRTKEYWORD=${MASSIVE_TESTS_WPRTKEYWORD:-"Workpart"}
 MASSIVE_TESTS_KEYWORDS=${MASSIVE_TESTS_KEYWORDS:-"Workload:Conf:X:X"}
 TUPLE=$(comb4 "$WORKLOADS" "$CONFS" "$SECTIONS" "$PARAMETERS")
-rm -f references.txt
-rm -rf summary
-rm -rf run
-mkdir summary
-mkdir run
+
+if [ -z "$MASSIVE_TESTS_OMIT_EXECUTION" ]; then
+    rm -f references.txt
+    rm -rf summary
+    rm -rf run
+    mkdir summary
+    mkdir run
+fi
+
 for mode in $MODES; do
     for submode in $SUBMODES; do
         CONF=conf.${mode}_${submode}
@@ -46,8 +50,10 @@ for mode in $MODES; do
         if is_bash_func_declared set_specific_params; then 
             set_specific_params "$mode" "$submode"
         fi
-        massivetest-run
-        move_results "$DIR"
+        if [ -z "$MASSIVE_TESTS_OMIT_EXECUTION" ]; then
+            massivetest-run
+            move_results "$DIR"
+        fi
         ./extract.sh "$DIR" "$TUPLE" "$MASSIVE_TESTS_KEYWORDS" "$MASSIVE_TESTS_WPRTKEYWORD" > "run/out.$CONF" && true
         if [ "$?" != "0" ]; then
             tail -n1 "run/out.$CONF"
