@@ -113,6 +113,7 @@ status_t absolute_numeric_value_comparator<val_t>::compare(std::string &comment,
             std::string(" dir=") + dir; 
         return status_t::F;
     }
+    comment = helpers::flt2str(diff);
     return status_t::P;
 }
 
@@ -153,6 +154,7 @@ status_t relative_numeric_value_comparator<val_t>::compare(std::string &comment,
             std::string(" dir=") + dir; 
         return status_t::F;
     }
+    comment = helpers::flt2str(diff);
     return status_t::P;
 }
 
@@ -172,7 +174,8 @@ status_t oneof_value_comparator<val_t>::compare(std::string &comment, std::map<s
         comment = std::string("Value is not one of requred for section/parameter=") + parameter_code + 
                   std::string(" acquired=") + helpers::value2str(result) + 
                   std::string(" dir=") + dir;
-
+    } else {
+        comment = helpers::value2str(result);
     }
     return found ? status_t::P : status_t::F;
 }
