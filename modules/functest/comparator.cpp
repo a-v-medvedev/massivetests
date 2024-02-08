@@ -37,6 +37,24 @@
 
 namespace functest {
 
+static inline void put_as_comment_if_bigger(float diff, std::string &comment) {
+    if (comment.empty()) {
+        comment = helpers::flt2str(diff);
+    } else {
+        const char *start = comment.c_str();
+        char *end;
+        double existing = std::strtod(start, &end);
+        if (existing == 0 && start == end) {
+			;
+            //comment = helpers::flt2str(diff);
+        } else {
+            if (diff > existing) {
+                comment = helpers::flt2str(diff);
+            }
+        }
+    }
+}
+
 template <typename val_t>
 bool basic_value_comparator<val_t>::acquire_result_data_piece(const YAML::Node &stream, 
                                                               const std::string &parameter) {
@@ -113,7 +131,7 @@ status_t absolute_numeric_value_comparator<val_t>::compare(std::string &comment,
             std::string(" dir=") + dir; 
         return status_t::F;
     }
-    comment = helpers::flt2str(diff);
+	put_as_comment_if_bigger(diff, comment);
     return status_t::P;
 }
 
@@ -154,7 +172,7 @@ status_t relative_numeric_value_comparator<val_t>::compare(std::string &comment,
             std::string(" dir=") + dir; 
         return status_t::F;
     }
-    comment = helpers::flt2str(diff);
+	put_as_comment_if_bigger(diff, comment);
     return status_t::P;
 }
 
