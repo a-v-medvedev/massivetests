@@ -17,7 +17,7 @@ cat > $script << 'EOM'
 export MAKE_PARALLEL_LEVEL=4
 
 export PSUBMIT_OPTS_NNODES=1
-export PSUBMIT_OPTS_PPN=4
+export PSUBMIT_OPTS_PPN=1
 export PSUBMIT_OPTS_NGPUS=1
 export PSUBMIT_OPTS_QUEUE_NAME=test
 export PSUBMIT_OPTS_QUEUE_SUFFIX=
@@ -25,6 +25,8 @@ export PSUBMIT_OPTS_NODETYPE=
 export PSUBMIT_OPTS_INIT_COMMANDS=
 export PSUBMIT_OPTS_MPI_SCRIPT=ompi3
 export PSUBMIT_OPTS_BATCH_SCRIPT=direct
+
+export PSUBMIT_OPTS_CPER10USEC=32
 
 EOM
     . $script
@@ -49,12 +51,6 @@ function env_init {
     CGNS)
         # put here any specific env. setting before CGNS build
 	;;
-    qubiq-lib)
-        # put here any specific env. setting before qubiq-lib build
-    ;;
-    qubiq-solver)
-        # put here any specific env. setting before qubiq-solver build
-    ;;
     esac
     return 0
 }

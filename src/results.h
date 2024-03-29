@@ -6,13 +6,13 @@
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
-    Foobar is distributed in the hope that it will be useful,
+    massivetests is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with Foobar.  If not, see <https://www.gnu.org/licenses/>.
+    along with massivetests.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 #pragma once
@@ -35,37 +35,50 @@ struct result_t {
 
 template <typename TRAITS>
 struct result : public result_t {
+    using workload_conf_t = typename TRAITS::workload_conf_t;
     using parallel_conf_t = typename TRAITS::parallel_conf_t;
     using target_parameter_t = typename TRAITS::target_parameter_t;
-    using workload_size_t = typename TRAITS::workload_size_t;
+    using workpart_t = typename TRAITS::workpart_t;
+    using value_t = typename TRAITS::value_t;
+    workload_conf_t workload_conf;
     parallel_conf_t parallel_conf;
     target_parameter_t target_parameter;
-    workload_size_t workload_size;
-    double value;
+    workpart_t workpart;
+    value_t value;
+    std::string comment = "";
     std::string index;
+    std::map<std::string, std::string> auxilary;
     result() {}
-    result(parallel_conf_t _parallel_conf, target_parameter_t _target_parameter,
-           workload_size_t _workload_size, double _value)
-        : parallel_conf(_parallel_conf), target_parameter(_target_parameter),
-          workload_size(_workload_size), value(_value) {
+    result(workload_conf_t _workload_conf, parallel_conf_t _parallel_conf, 
+           target_parameter_t _target_parameter,
+           workpart_t _workpart, value_t _value, const std::string &_comment, 
+           const std::map<std::string, std::string> &_auxilary)
+        : workload_conf(_workload_conf), parallel_conf(_parallel_conf), target_parameter(_target_parameter),
+          workpart(_workpart), value(_value), comment(_comment), auxilary(_auxilary) {
         make_index();
     }
 
     void make_index() {
         std::stringstream ss;
-        ss << parallel_conf << "_";
-        ss << target_parameter << "_";
-        ss << workload_size;
+        ss << TRAITS::workload_conf_to_string(workload_conf) << "_";
+        ss << TRAITS::parallel_conf_to_string(parallel_conf) << "_";
+        ss << TRAITS::target_parameter_to_string(target_parameter) << "_";
+        ss << TRAITS::workpart_to_string(workpart);
         index = ss.str();
     }
 
     virtual void to_yaml(YAML::Emitter &out) {
         out << YAML::Flow;
         out << YAML::BeginMap;
-        out << parallel_conf;
-        out << target_parameter;
-        out << workload_size;
+        TRAITS::workload_conf_to_yaml(workload_conf, out);
+        TRAITS::parallel_conf_to_yaml(parallel_conf, out);
+        TRAITS::target_parameter_to_yaml(target_parameter, out);
+        TRAITS::workpart_to_yaml(workpart, out);
         YAML_OUT("Value", value);
+        YAML_OUT("Comment", comment);
+        if (auxilary.size() != 0) {
+            YAML_OUT_MAP("Auxvalues", auxilary);
+        }
         out << YAML::EndMap;
     }
     virtual std::string get_index() { return index; }
