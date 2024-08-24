@@ -181,13 +181,15 @@ function massivetest-run() {
 }
 
 function init_env()  {
-    [ -f ./env.sh ] && source ./env.sh || fatal "no env.sh file."
-    env_init_global
+    if [ -f ./env.sh ]; then 
+        source ./env.sh
+        env_init_global
+    fi
 
     [ -e psubmit.bin ] || fatal "psubmit.bin directory or symlink required."
     [ -e thirdparty ] || fatal "thirdparty directory or symlink required."
     export PATH=$PWD/psubmit.bin:$PATH
-    export LD_LIBRARY_PATH=$PWD/lib:$PWD/thirdparty/yaml-cpp.bin/lib:$PWD/thirdparty/argsparser.bin:$LD_LIBRARY_PATH
+    export LD_LIBRARY_PATH=$PWD/lib:$LD_LIBRARY_PATH
     [ -x ./massivetest ] || fatal "massivetest executable is required."
     [ -e ./params.inc ] || fatal "params.inc executable is required."
 }
