@@ -61,6 +61,7 @@ void input_maker<parallel_conf_t>::do_substs(const parallel_conf_t &pconf, std::
     helpers::subst(filename, "%NNODES%", std::to_string(pconf.nnodes));
     helpers::subst(filename, "%PPN%", std::to_string(pconf.ppn));
     helpers::subst(filename, "%NTH%", std::to_string(pconf.nth));
+    helpers::subst(filename, "%NP%", std::to_string(pconf.nnodes*pconf.ppn));
 }
 
 template <typename parallel_conf_t>
@@ -162,7 +163,7 @@ bool input_maker<parallel_conf_t>::make(const parallel_conf_t &pconf, execution_
 
     // Create the set of environment variables for scripts that we are going to execute
     auto &exports = env.exports;
-	for (const auto v : {"WLD", "CONF", "WPRT", "WPRT_PARAM", "NP", "PPN", "NTH"}) {
+	for (const auto v : {"WLD", "CONF", "WPRT", "WPRT_PARAM", "NNODES", "PPN", "NTH", "NP"}) {
 		std::string s = std::string("MASSIVE_TESTS_TESTITEM_") + v + "=" + "%" + v + "%";
 		do_substs(pconf, s);
 		exports.push_back(s);
