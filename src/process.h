@@ -56,11 +56,15 @@ struct execution_environment {
                   << "-o"
                   << " " << psubmit_options << " "
                   << "-a"
-                  << " " << cmdline_args << " " 
-                  << "-b"
-                  << " " << preproc << " "
-                  << "-f"
-                  << " " << postproc << " ";
+                  << " " << cmdline_args << " ";
+        if (!preproc.empty()) {  
+            std::cout << "-b"
+                      << " " << preproc << " ";
+        }
+        if (!postproc.empty()) {  
+            std::cout << "-f"
+                      << " " << postproc << " ";
+        }
         if (timeout) {
             std::cout << "-ltime=" << timeout << " ";
         }
@@ -90,9 +94,15 @@ struct execution_environment {
         argv[1] = strdup("-n"); argv[2] = strdup(std::to_string(pconf.nnodes).c_str());
         argv[3] = strdup("-o"); argv[4] = strdup(psubmit_options.c_str());
         argv[5] = strdup("-a"); argv[6] = strdup(cmdline_args.c_str());
-        argv[7] = strdup("-b"); argv[8] = strdup(preproc.c_str());
-        argv[9] = strdup("-f"); argv[10]= strdup(postproc.c_str());
-        size_t n = 11;
+        size_t n = 7;
+        if (!preproc.empty()) {
+            argv[n++] = strdup("-b"); 
+            argv[n++] = strdup(preproc.c_str());
+        }
+        if (!postproc.empty()) {
+            argv[n++] = strdup("-f"); 
+            argv[n++]= strdup(postproc.c_str());
+        }
         if (pconf.ppn) {
             argv[n++] = strdup("-p");
             argv[n++] = strdup(std::to_string(pconf.ppn).c_str());
@@ -110,7 +120,7 @@ struct execution_environment {
             argv[n++] = strdup("-l");
             argv[n++] = strdup(psubmit_list_options.c_str());
         }
-        argv[n] = nullptr; // max. possible value of n is: 11+8=19
+        argv[n] = nullptr; // max. possible value of n is: 7+12=19
         execvp(full_executable.c_str(), argv);
     }
     std::string to_string() {
