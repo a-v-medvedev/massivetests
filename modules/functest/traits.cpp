@@ -112,7 +112,8 @@ bool traits::debug = true;
 #else
 bool traits::debug = false;
 #endif
-unsigned traits::default_timeout = 15; // FIXME make it a cmdline param
+unsigned traits::default_timeout = 0; // FIXME make it a cmdline param; 0 means not specifically set timeout 
+                                      // (but it still can be set in psubmit.opt by application itself)
 double traits::default_tolerance_float = 1.0e-8; // FIXME make it a cmdline param
 unsigned traits::default_tolerance_int = 1; // FIXME make it a cmdline param
 unsigned traits::open_outfile_nattempts = 5; // was: 100 for Lom2 FIXME make it an external cmdline param

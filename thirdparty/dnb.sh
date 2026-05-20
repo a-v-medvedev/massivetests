@@ -19,28 +19,11 @@
 
 set -eu
 
-[ -f ../env.sh ] && source ../env.sh || echo "WARNING: no environment file ../env.sh!"
+#----
 
-BSCRIPTSDIR=./dbscripts
+DNB_DBSCRIPTSDIR=./dbscripts
+DNB_YAML_CONFIG="dnb.yaml"
 
-source $BSCRIPTSDIR/base.inc
-source $BSCRIPTSDIR/funcs.inc
-source $BSCRIPTSDIR/compchk.inc
-source $BSCRIPTSDIR/envchk.inc
-source $BSCRIPTSDIR/db.inc
-source $BSCRIPTSDIR/apps.inc
-
-####
-
-PACKAGES="yaml-cpp argsparser" 
-VERSIONS="yaml-cpp:0.7.0 argsparser:0.1.2" 
-TARGET_DIRS="yaml-cpp.bin argsparser.bin"
-
-started=$(date "+%s")
-echo "Download and build started at timestamp: $started."
-environment_check_main || fatal "Environment is not supported, exiting"
-dubi_main "$*"
-finished=$(date "+%s")
-echo "----------"
-echo "Full operation time: $(expr $finished - $started) seconds."
+source $DNB_DBSCRIPTSDIR/includes.inc
+source "$DNB_DBSCRIPTSDIR/yaml-config.inc"
 

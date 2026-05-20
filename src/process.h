@@ -38,11 +38,12 @@
 #include "helpers.h"
 
 struct execution_environment {
-    std::string input_yaml;
     std::string psubmit_options;
     std::string cmdline_args;
     std::string preproc, postproc;
     std::vector<std::string> exports;
+    unsigned int timeout = 0;
+    std::string psubmit_list_options;
     bool skip = false;
     bool holdover = false;
     std::string holdover_reason;
@@ -60,6 +61,12 @@ struct execution_environment {
                   << " " << preproc << " "
                   << "-f"
                   << " " << postproc << " ";
+        if (timeout) {
+            std::cout << "-ltime=" << timeout << " ";
+        }
+        if (!psubmit_list_options.empty()) {
+            std::cout << "-l" << psubmit_list_options << " ";
+        }  
         if (pconf.ppn) {
             std::cout  << "-p"
                        << " " << std::to_string(pconf.ppn) << " ";
@@ -78,7 +85,7 @@ struct execution_environment {
 		if (full_executable.empty()) {
 			throw std::runtime_error(std::string("exec: can't find file or it has no execution permissions: " + executable));
 		}
-        char *argv[18];
+        char *argv[20];
         argv[0] = strdup(executable.c_str());
         argv[1] = strdup("-n"); argv[2] = strdup(std::to_string(pconf.nnodes).c_str());
         argv[3] = strdup("-o"); argv[4] = strdup(psubmit_options.c_str());
@@ -94,14 +101,20 @@ struct execution_environment {
             argv[n++] = strdup("-t");
             argv[n++] = strdup(std::to_string(pconf.nth).c_str());
         }
-        argv[n] = nullptr;
+        if (timeout) {
+            std::string tmp = std::string("time=") + std::to_string(timeout);
+            argv[n++] = strdup("-l");
+            argv[n++] = strdup(tmp.c_str());
+        }
+        if (!psubmit_list_options.empty()) {
+            argv[n++] = strdup("-l");
+            argv[n++] = strdup(psubmit_list_options.c_str());
+        }
+        argv[n] = nullptr; // max. possible value of n is: 11+8=19
         execvp(full_executable.c_str(), argv);
     }
     std::string to_string() {
         std::stringstream ss;
-        if (!input_yaml.empty()) {  // FIXME input_yaml field seems to be redundant
-            ss << "input=" << input_yaml << " ";
-        }
         ss << "psubmit_options=" << psubmit_options << " ";
         ss << "args={" << cmdline_args << "}";
         return ss.str();
