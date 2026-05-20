@@ -53,15 +53,16 @@ input_maker<parallel_conf_t>::input_maker(test_scope<functest::traits> &_scope)
 }
 
 template <typename parallel_conf_t>
-void input_maker<parallel_conf_t>::do_substs(const parallel_conf_t &pconf, std::string &filename) {
-    helpers::subst(filename, "%WLD%", scope.workload_conf.first);
-    helpers::subst(filename, "%CONF%", scope.workload_conf.second);
-    helpers::subst(filename, "%WPRT%", scope.workparts[0].first);
-    helpers::subst(filename, "%WPRT_PARAM%", std::to_string(scope.workparts[0].second));
-    helpers::subst(filename, "%NNODES%", std::to_string(pconf.nnodes));
-    helpers::subst(filename, "%PPN%", std::to_string(pconf.ppn));
-    helpers::subst(filename, "%NTH%", std::to_string(pconf.nth));
-    helpers::subst(filename, "%NP%", std::to_string(pconf.nnodes*pconf.ppn));
+void input_maker<parallel_conf_t>::do_substs(const parallel_conf_t &pconf, std::string &pattern) {
+    helpers::subst(pattern, "%WLD%", scope.workload_conf.first);
+    helpers::subst(pattern, "%CONF%", scope.workload_conf.second);
+    helpers::subst(pattern, "%WPRT%", scope.workparts[0].first);
+    helpers::subst(pattern, "%WPRT_PARAM%", std::to_string(scope.workparts[0].second));
+    helpers::subst(pattern, "%NNODES%", std::to_string(pconf.nnodes));
+    helpers::subst(pattern, "%PPN%", std::to_string(pconf.ppn));
+    helpers::subst(pattern, "%NTH%", std::to_string(pconf.nth));
+    helpers::subst(pattern, "%NP%", std::to_string(pconf.nnodes*pconf.ppn));
+    helpers::subst(pattern, "%TIMEOUT%", std::to_string(testitem.get_timeout(functest::traits::parallel_conf_to_string(pconf))));
 }
 
 template <typename parallel_conf_t>
@@ -80,22 +81,12 @@ bool input_maker<parallel_conf_t>::file_exists(const parallel_conf_t &pconf, con
 }
 
 template <typename parallel_conf_t>
-bool input_maker<parallel_conf_t>::exec_shell_command(const parallel_conf_t &pconf, const test_item_t &testitem, 
-                                                      const std::string &script, const std::vector<std::string> &exports,
+bool input_maker<parallel_conf_t>::exec_shell_command(const std::string &script, const std::vector<std::string> &exports,
                                                       std::string &result, int &status) {
 	std::string command = script + " ";
     for (const auto &v : exports) {
         command += v + " ";
     }
-	auto timeout = testitem.get_timeout(functest::traits::parallel_conf_to_string(pconf));
-	command += std::string("TIMEOUT=") + std::to_string(timeout) + " ";
-#if 0 // This code is specific for basic comparators, cannot handle complex ones this way    
-    for (const auto &kv : testitem.base) {
-        std::string replaced(kv.first);
-        helpers::subst(replaced, "/", "_");
-        command += std::string("TESTITEM__") + replaced + "=" + std::to_string(kv.second) + " ";
-    }
-#endif    
     char buffer[128]; // buffer to read the command's output
     FILE* pipe = popen(command.c_str(), "r"); // open a pipe to the command
     if (!pipe) {
@@ -138,7 +129,7 @@ bool input_maker<parallel_conf_t>::check_prerequisites(const parallel_conf_t &pc
 template <typename parallel_conf_t>
 bool input_maker<parallel_conf_t>::make(const parallel_conf_t &pconf, execution_environment &env) {
 	assert(scope.workparts.size() == 1);
-    const auto &workload = scope.workload_conf.first;
+    //const auto &workload = scope.workload_conf.first;
 	const auto &conf = scope.workload_conf.second;
 
     // If the skip flag is set, just return
@@ -159,24 +150,27 @@ bool input_maker<parallel_conf_t>::make(const parallel_conf_t &pconf, execution_
     } else { 
         env.psubmit_options = "./psubmit_" + conf + ".opt";
     }
-    env.input_yaml = "./input_" + workload + ".yaml";
 
     // Create the set of environment variables for scripts that we are going to execute
     auto &exports = env.exports;
-	for (const auto v : {"WLD", "CONF", "WPRT", "WPRT_PARAM", "NNODES", "PPN", "NTH", "NP"}) {
+	for (const auto v : {"WLD", "CONF", "WPRT", "WPRT_PARAM", "NNODES", "PPN", "NTH", "NP", "TIMEOUT"}) {
 		std::string s = std::string("MASSIVE_TESTS_TESTITEM_") + v + "=" + "%" + v + "%";
 		do_substs(pconf, s);
 		exports.push_back(s);
     } 
 
-	// To form a command line we either execute the ./input_maker_cmdline.sh script or fill in some hard-coded values 
-    // (hard coded values are deprecated)
+    env.timeout = testitem.get_timeout(functest::traits::parallel_conf_to_string(pconf));
+
+	// To form a command line we execute the ./input_maker_cmdline.sh script
+    // The output of this script is considered a command line for the test object
+    // It is passed then as a value of the "-a" argument of psubmit.sh
+    // When ./input_maker_cmdline.sh returns non-zero, we interpret this as an instruction to skip this testcase
     bool cmdline_requires_additional_filling = true;
     const std::string input_maker_script = "./input_maker_cmdline.sh";
     if (helpers::file_exists(input_maker_script) && helpers::file_is_exec(input_maker_script)) {
         cmdline_requires_additional_filling = false;
 		int status = -1;
-        bool result = exec_shell_command(pconf, testitem, input_maker_script + " 2>&1", env.exports, env.cmdline_args, status);
+        bool result = exec_shell_command(input_maker_script + " 2>&1", env.exports, env.cmdline_args, status);
 		if (!result) {
 			env.skip = true;
             std::cout << "INPUT: input maker script execution failure" << std::endl;
@@ -188,21 +182,9 @@ bool input_maker<parallel_conf_t>::make(const parallel_conf_t &pconf, execution_
 			return false;
 		}
     } else {
-        //--- cmdline hardcoded (DEPRECATED)
-        env.cmdline_args = load_key + " " + env.input_yaml;
-        env.cmdline_args += std::string(" ") + result_key + std::string(" ") + " result.%PSUBMIT_JOBID%.yaml";
-        if (conf_key != "") {
-            env.cmdline_args += std::string(" ") + conf_key + std::string(" ") + conf;
-        }
-        if (timeout_key != "" && testitem.get_timeout(functest::traits::parallel_conf_to_string(pconf))) {
-            env.cmdline_args += std::string(" ") + timeout_key + std::string(" ") + 
-                                std::to_string(testitem.get_timeout(functest::traits::parallel_conf_to_string(pconf)));
-        }
-        char *aux_opts;
-        if ((aux_opts = getenv("MASSIVETEST_AUX_ARGS"))) {
-            env.cmdline_args += " " + std::string(aux_opts);
-        }
-        //--- /cmdline hardcoded (DEPRECATED)
+        env.skip = true;
+        std::cout << "INPUT: input maker script can't be found: expecting file: " << input_maker_script << std::endl;
+        return false;
     }
 
 	// Make substitutions in preproc and postproc script names and args if they exist

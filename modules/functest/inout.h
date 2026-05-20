@@ -35,10 +35,6 @@ namespace functest {
 
 template <typename parallel_conf_t>
 struct input_maker : public input_maker_base<parallel_conf_t> {
-    std::string load_key = "-load";
-    std::string result_key = "-result";
-    std::string conf_key = "";
-    std::string timeout_key = "-timeout";
     test_item_t testitem;
     test_scope<traits> &scope;
     input_maker(test_scope<traits> &_scope);
@@ -46,8 +42,7 @@ struct input_maker : public input_maker_base<parallel_conf_t> {
     virtual bool make(const parallel_conf_t &pconf, execution_environment &env);
 	void do_substs(const parallel_conf_t &pconf, std::string &filename);
 	bool file_exists(const parallel_conf_t &pconf, const std::string &filename_);
-	bool exec_shell_command(const parallel_conf_t &pconf, const test_item_t &testitem,
-                            const std::string &script, const std::vector<std::string> &exports, 
+	bool exec_shell_command(const std::string &script, const std::vector<std::string> &exports, 
                             std::string &result, int &status);
 };
 
