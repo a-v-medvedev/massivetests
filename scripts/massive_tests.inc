@@ -170,6 +170,7 @@ function move_results() {
     mv results.* "$DIR"
     [ $(ls -1d input*.yaml 2>/dev/null | wc -l) == "0" ] || cp input*.yaml "$DIR"
     mv output_initial.yaml "$DIR"/output.yaml
+    [ -e getgoldvalues.sh ] && ln -s ../../getgoldvalues.sh "$DIR"
 }
 
 function massivetest-run() {
