@@ -32,15 +32,8 @@ MASSIVE_TESTS_PARAMETERS="$PARAMETERS"
 MASSIVE_TESTS_WPRTKEYWORD=${MASSIVE_TESTS_WPRTKEYWORD:-"Workpart"}
 MASSIVE_TESTS_KEYWORDS=${MASSIVE_TESTS_KEYWORDS:-"Workload:Conf:X:X"}
 TUPLE=$(comb4 "$WORKLOADS" "$CONFS" "$SECTIONS" "$PARAMETERS")
-VBBSID=""
 
 if [ -z "$MASSIVE_TESTS_OMIT_EXECUTION" ]; then
-    if [ ! -z "$MASSIVE_TESTS_VBBS" -a -e application.conf/$suite/vbbs-psubmit.opt ]; then
-        psubmit.sh -n"$MASSIVE_TESTS_VBBS" -e vbbs_sleep.sh -o application.conf/$suite/vbbs-psubmit.opt > vbbs_$suite.log 2>&1 &
-        while [ "$VBBSID" == 0 -o "$VBBSID" == "" ]; do
-            VBBSID=$(vbbs slurm_show_id | grep SLURM_JOBID: | awk '{print $2}')
-        done
-    fi
     rm -f references.txt
     rm -rf summary
     rm -rf run
@@ -83,4 +76,3 @@ are_there_files references.txt && cp -f references.txt summary/ || true
 are_there_files "test_items*yaml" && cp -f test_items*yaml summary/ || true
 are_there_files "input_*.yaml" && cp -f input_*.yaml summary/ || true
 
-[ -z "$VBBSID" ] || { kill %1; vbbs init; }
